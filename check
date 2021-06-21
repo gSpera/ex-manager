@@ -1,0 +1,13 @@
+#!/bin/sh
+
+
+target=""
+while getopts "t:" flag; do
+    case $flag in
+        t) target=$OPTARG;;
+        *) echo "Unkown $flag"
+    esac
+done
+
+echo $target
+echo "Lorem ipsum CCIT{A} ."
