@@ -1,11 +1,13 @@
 package ex
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"regexp"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -15,6 +17,9 @@ import (
 type Session struct {
 	name      string
 	log       *log.Entry
+	ctx       context.Context
+	sleepTime time.Duration
+	cancel    context.CancelFunc
 	targets   []string
 	flagRegex *regexp.Regexp
 	services  []*Service
@@ -25,7 +30,10 @@ func NewSession(name string, flagRegex string, targets ...Target) (*Session, err
 	var err error
 
 	s.name = name
+	s.sleepTime = time.Second
+	s.ctx, s.cancel = context.WithCancel(context.Background())
 	s.targets = targets
+	s.log = log.New().WithField("session", name)
 	s.services = []*Service{}
 
 	s.flagRegex, err = regexp.Compile(flagRegex)
@@ -61,16 +69,26 @@ func (s *Session) ListServices() []*Service {
 
 func (s *Session) Work() error {
 	for {
+		if err := s.ctx.Err(); err != nil {
+			return err
+		}
+
 		e, ok := s.getExploit()
 		if !ok {
-			s.log.Println("Cannot find exploit")
+			s.log.Warnln("Cannot find exploit")
+			time.Sleep(1 * time.Second)
 			continue
 		}
 
 		e.Execute()
+		time.Sleep(s.sleepTime)
 	}
+}
 
-	return nil
+func (s *Session) WorkAdd(n int) {
+	for i := 0; i < n; i++ {
+		go s.Work()
+	}
 }
 
 func (s *Session) AddTarget(t Target) {
@@ -92,6 +110,10 @@ func (s *Session) GetServiceByName(name string) *Service {
 	return nil
 }
 
+func (s *Session) Stop() {
+	s.cancel()
+}
+
 func (s *Session) getExploit() (*Exploit, bool) {
 	if len(s.services) == 0 {
 		return nil, false
@@ -104,6 +126,10 @@ func (s *Session) getExploit() (*Exploit, bool) {
 		return nil, false
 	}
 	n = rand.Intn(len(es.exploits))
+
+	if es.exploits[n].state != Running {
+		return nil, false
+	}
 
 	return es.exploits[n], true
 }

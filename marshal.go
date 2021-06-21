@@ -3,13 +3,17 @@ package ex
 import (
 	"context"
 	"encoding/json"
+	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (s *Session) UnmarshalJSON(b []byte) error {
 	m := struct {
-		Name     string
-		Targets  []Target
-		Services []*Service
+		Name      string
+		SleepTime time.Duration
+		Targets   []Target
+		Services  []*Service
 	}{}
 
 	err := json.Unmarshal(b, &m)
@@ -18,6 +22,9 @@ func (s *Session) UnmarshalJSON(b []byte) error {
 	}
 
 	s.name = m.Name
+	s.sleepTime = m.SleepTime
+	s.ctx, s.cancel = context.WithCancel(context.Background())
+	s.log = log.New().WithField("session", m.Name)
 	s.targets = m.Targets
 	for _, mm := range m.Services {
 		s.AddService(mm)
@@ -56,6 +63,7 @@ func (e *Exploit) UnmarshalJSON(b []byte) error {
 	}
 	e.name = m.Name
 	e.cmdName = m.CommandName
+	e.state = Paused
 
 	e.ctx, e.stop = context.WithCancel(context.Background())
 	e.patched = make(map[string]struct{}, len(m.Patched))
@@ -93,8 +101,7 @@ func (s *Service) MarshalJSON() ([]byte, error) {
 
 func (e *Exploit) MarshalJSON() ([]byte, error) {
 	m := struct {
-		Name string
-
+		Name        string
 		Patched     map[Target]bool `json:",omitempty"`
 		CommandName string
 	}{}

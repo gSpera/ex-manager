@@ -11,7 +11,9 @@ import (
 func main() {
 	exs, _ := ex.NewSession("Session", "CCIT\\{.*\\}", "peppe", "vacwm1")
 	a := ex.NewService(":S")
-	a.AddExploit(ex.NewExploit("Exploit", "./check"))
+	e := ex.NewExploit("Exploit", "./check")
+	e.NewState(ex.Running)
+	a.AddExploit(e)
 	exs.AddService(a)
 
 	spew.Dump(exs)
