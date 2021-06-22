@@ -23,9 +23,10 @@ type Session struct {
 	targets   []string
 	flagRegex *regexp.Regexp
 	services  []*Service
+	submitter *Submitter
 }
 
-func NewSession(name string, flagRegex string, targets ...Target) (*Session, error) {
+func NewSession(name string, flagRegex string, submitCommand string, targets ...Target) (*Session, error) {
 	s := &Session{}
 	var err error
 
@@ -35,6 +36,7 @@ func NewSession(name string, flagRegex string, targets ...Target) (*Session, err
 	s.targets = targets
 	s.log = log.New().WithField("session", name)
 	s.services = []*Service{}
+	s.submitter = NewSubmitter(submitCommand, defaultSubmitTime)
 
 	s.flagRegex, err = regexp.Compile(flagRegex)
 	if err != nil {

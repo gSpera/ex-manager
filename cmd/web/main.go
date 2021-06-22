@@ -82,7 +82,7 @@ func main() {
 	http.HandleFunc("/targets", serverHandler(s, handleApiTarget))
 	http.HandleFunc("/api/newService", serverHandler(s, handleApiNewService))
 	http.HandleFunc("/api/exploitStart", serverHandler(s, handleApiExploitStart))
-	http.HandleFunc("/api/flagsFound", serverHandler(s, handleApiFlags))
+	http.HandleFunc("/flags", serverHandler(s, handleApiFlags))
 	http.HandleFunc("/api/name", serverHandler(s, handleApiName))
 
 	log.Infoln("Listening on :8080")

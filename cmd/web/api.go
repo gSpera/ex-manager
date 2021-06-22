@@ -65,11 +65,16 @@ func handleApiFlags(s *Server, rw http.ResponseWriter, r *http.Request) {
 	// serviceName := r.FormValue("serviceName")
 	// exploitName := r.FormValue("exploitName")
 	list := make(map[string]map[ex.Target][]ex.Flag)
-	for _, e := range s.session.AllExploits() {
-		list[e.Name()] = e.Flags()
+	for _, service := range s.session.ListServices() {
+		for _, e := range service.Exploits() {
+			list[service.Name() + "-" +e.Name()] = e.Flags()
+		}
 	}
 
-	err := json.NewEncoder(rw).Encode(list)
+	e := json.NewEncoder(rw)
+	e.SetIndent("", "\t")
+	err := e.Encode(list)
+
 	if err != nil {
 		s.log.Errorf("Encode flags:", err)
 	}

@@ -5,6 +5,8 @@
 		"127"
 	],
 	"FlagRegex": "CCIT",
+	"SubmitCommand": "ls",
+	"SubmitTime": 1,
 	"Services": [
 		{
 			"Name": "Biomarkt",

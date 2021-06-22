@@ -12,11 +12,13 @@ import (
 
 func (s *Session) UnmarshalJSON(b []byte) error {
 	m := struct {
-		Name      string
-		SleepTime time.Duration
-		Targets   []Target
-		FlagRegex string
-		Services  []*Service
+		Name          string
+		SleepTime     time.Duration
+		Targets       []Target
+		FlagRegex     string
+		SubmitCommand string
+		SubmitTime    time.Duration
+		Services      []*Service
 	}{}
 
 	err := json.Unmarshal(b, &m)
@@ -31,6 +33,13 @@ func (s *Session) UnmarshalJSON(b []byte) error {
 	s.sleepTime = m.SleepTime
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 	s.log = log.New().WithField("session", m.Name)
+	if m.SubmitTime == 0 {
+		m.SubmitTime = defaultSubmitTime
+	}
+	if m.SubmitCommand == "" {
+		return fmt.Errorf("No submit command")
+	}
+	s.submitter = NewSubmitter(m.SubmitCommand, m.SubmitTime)
 	s.targets = m.Targets
 	if m.FlagRegex == "" {
 		return fmt.Errorf("No regex flag")
@@ -103,13 +112,17 @@ func (e *Exploit) UnmarshalJSON(b []byte) error {
 
 func (s *Session) MarshalJSON() ([]byte, error) {
 	m := struct {
-		Name      string
-		Targets   []Target
-		FlagRegex string
-		Services  []*Service
+		Name          string
+		Targets       []Target
+		FlagRegex     string
+		SubmitCommand string
+		SubmitTime    time.Duration
+		Services      []*Service
 	}{}
 
 	m.Name = s.name
+	m.SubmitCommand = s.submitter.cmdLine
+	m.SubmitTime = s.submitter.time
 	m.FlagRegex = s.flagRegex.String()
 	m.Targets = s.targets
 	m.Services = s.services
