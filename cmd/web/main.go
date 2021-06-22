@@ -61,7 +61,8 @@ func main() {
 		return
 	}
 
-	// exs.WorkAdd(10)
+	exs.WorkAdd(10)
+	go exs.WorkSubmitter()
 
 	data, err := json.MarshalIndent(exs, "", "\t")
 	if err != nil {

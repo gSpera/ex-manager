@@ -38,6 +38,11 @@ func (s *Submitter) AddFlags(flags ...Flag) {
 func (s *Submitter) Submit() {
 	// support partial sending??
 	lo := log.New()
+	if len(s.flagsToSubmit) == 0 {
+		lo.Println("No flags")
+		return
+	}
+
 	lo.Println("Sending flags:", s.flagsToSubmit)
 	cmd := exec.Command(s.cmdLine, s.flagsToSubmit...)
 	cmd.Stdout = lo.Writer()

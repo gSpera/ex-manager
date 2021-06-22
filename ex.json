@@ -4,9 +4,9 @@
 		"0",
 		"127"
 	],
-	"FlagRegex": "CCIT",
-	"SubmitCommand": "ls",
-	"SubmitTime": 1,
+	"FlagRegex": "CCIT\\{.*\\}",
+	"SubmitCommand": "./submit",
+	"SubmitTime": 10,
 	"Services": [
 		{
 			"Name": "Biomarkt",
@@ -20,6 +20,7 @@
 						],
 						"127": []
 					},
+					"State": "Running",
 					"CommandName": "./check"
 				}
 			]
@@ -30,16 +31,19 @@
 				{
 					"Name": "Il bonus",
 					"Flags": {},
+					"State": "",
 					"CommandName": "ilbonus"
 				},
 				{
 					"Name": "Il",
 					"Flags": {},
+					"State": "",
 					"CommandName": "ilbonus"
 				},
 				{
 					"Name": "bonus",
 					"Flags": {},
+					"State": "",
 					"CommandName": "ilbonus"
 				}
 			]

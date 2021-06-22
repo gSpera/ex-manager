@@ -39,7 +39,7 @@ func (s *Session) UnmarshalJSON(b []byte) error {
 	if m.SubmitCommand == "" {
 		return fmt.Errorf("No submit command")
 	}
-	s.submitter = NewSubmitter(m.SubmitCommand, m.SubmitTime)
+	s.submitter = NewSubmitter(m.SubmitCommand, m.SubmitTime*time.Second)
 	s.targets = m.Targets
 	if m.FlagRegex == "" {
 		return fmt.Errorf("No regex flag")
@@ -80,6 +80,7 @@ func (e *Exploit) UnmarshalJSON(b []byte) error {
 
 		Patched     map[Target]bool
 		Flags       map[Target][]Flag
+		State       string
 		CommandName string
 	}{}
 
@@ -100,6 +101,7 @@ func (e *Exploit) UnmarshalJSON(b []byte) error {
 	}
 	// may check if are valid??
 
+	e.state = m.State
 	e.ctx, e.stop = context.WithCancel(context.Background())
 	e.patched = make(map[string]struct{}, len(m.Patched))
 	for target, patched := range m.Patched {
@@ -122,7 +124,7 @@ func (s *Session) MarshalJSON() ([]byte, error) {
 
 	m.Name = s.name
 	m.SubmitCommand = s.submitter.cmdLine
-	m.SubmitTime = s.submitter.time
+	m.SubmitTime = s.submitter.time / time.Second
 	m.FlagRegex = s.flagRegex.String()
 	m.Targets = s.targets
 	m.Services = s.services
@@ -145,11 +147,13 @@ func (e *Exploit) MarshalJSON() ([]byte, error) {
 		Name        string
 		Flags       map[Target][]Flag
 		Patched     map[Target]bool `json:",omitempty"`
+		State       ExploitState
 		CommandName string
 	}{}
 
 	m.Name = e.name
 	m.Flags = e.flags
 	m.CommandName = e.cmdName
+	m.State = e.state
 	return json.Marshal(m)
 }

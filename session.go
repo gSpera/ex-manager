@@ -132,6 +132,12 @@ func (s *Session) AllExploits() []*Exploit {
 	return exs
 }
 
+func (s *Session) WorkSubmitter() {
+	for {
+		<-s.submitter.ticker.C
+		s.submitter.Submit()
+	}
+}
 func (s *Session) getExploit() (*Exploit, bool) {
 	if len(s.services) == 0 {
 		return nil, false

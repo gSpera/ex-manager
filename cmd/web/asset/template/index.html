@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ex-Manager</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
+    <link rel="stylesheet" href="/static/css.css">
+
+    <script src="https://unpkg.com/react/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script type="text/babel" src="script.js"></script>
+</head>
+
+<body>
+    <nav class="navbar">
+        <h1 class="title is-1 navbar-brand mg-medium">
+            {{.SessionName}}
+        </h1>
+    </nav>
+
+    <main class="section has-background-info-light">
+        {{range .Services}}
+        <div class="service section box">
+            <h2 class="title is-2">{{.Name}}</h2>
+            {{range .Exploits}}
+
+            {{end}}
+        </div>
+        {{end}}
+
+        <div id="add-service" class="section box">
+            <div class="title is-2 has-text-centered">
+                Add new service
+            </div>
+            <input type="text" class="input mgh-large" name="service-name" placeholder="Service name">
+            <button id="add-service-btn" class="is-large button mgh-large">Add Service</button>
+        </div>
+    </main>
+</body>
+
+</html>

@@ -10,4 +10,5 @@ while getopts "t:" flag; do
 done
 
 echo $target
-echo "Lorem ipsum CCIT{A} ."
+F=$(base64 /dev/random | head -c5)
+echo "Lorem ipsum CCIT{$F} ."
