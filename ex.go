@@ -1,4 +1,6 @@
 package ex
 
-// Target rapresent a ip
-type Target = string
+type (
+	Target = string
+	Flag   = string
+)

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
+	"os"
 
 	"github.com/gSpera/ex-manager"
 	log "github.com/sirupsen/logrus"
@@ -53,16 +55,23 @@ func exploit(s *ex.Service) []ExploitValue {
 }
 
 func main() {
-	exs, err := ex.NewSession("Test", "CCIT", "0", "127")
+	exs, err := ex.NewSessionFromFile("ex.json")
 	if err != nil {
+		log.Fatalln("Cannot create session:", err)
 		return
 	}
-	biomarkt := ex.NewService("Biomarkt")
-	biomarkt.AddExploit(ex.NewExploit("ExploitName", "cmd"))
-	ilbonus := ex.NewService("Il Bonus")
-	ilbonus.AddExploit(ex.NewExploit("Il bonus", "ilbonus"))
-	exs.AddService(biomarkt)
-	exs.AddService(ilbonus)
+
+	// exs.WorkAdd(10)
+
+	data, err := json.MarshalIndent(exs, "", "\t")
+	if err != nil {
+		panic(err)
+	}
+	err = os.WriteFile("ex.json", data, 0666)
+	if err != nil {
+		panic(err)
+	}
+
 	s := &Server{
 		session: exs,
 		log:     log.New(),
@@ -70,9 +79,13 @@ func main() {
 
 	http.HandleFunc("/", serverHandler(s, handleHome))
 	http.Handle("/static/", http.FileServer(http.Dir(".")))
-	http.HandleFunc("/api/targets", serverHandler(s, handleApiTarget))
+	http.HandleFunc("/targets", serverHandler(s, handleApiTarget))
+	http.HandleFunc("/api/newService", serverHandler(s, handleApiNewService))
+	http.HandleFunc("/api/exploitStart", serverHandler(s, handleApiExploitStart))
+	http.HandleFunc("/api/flagsFound", serverHandler(s, handleApiFlags))
 	http.HandleFunc("/api/name", serverHandler(s, handleApiName))
 
 	log.Infoln("Listening on :8080")
-	http.ListenAndServe(":8080", nil)
+	err = http.ListenAndServe(":8080", nil)
+	log.Fatalln("Listening ", err)
 }

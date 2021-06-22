@@ -1,46 +1,6 @@
-html, body {
-    margin: 0;
-    padding: 0;
-}
-
-nav {
-    margin: 0;
-    width: 100%;
-    display: block;
-    background-color: blue;
-}
-nav h1 {
-    display: inline-block;
-    margin-left: 1rem;
-}
-
-.service {
-    margin: 10px;
-    background-color: green;
-}
-.exploit {
-    margin: 10px;
-}
-.exploit .status-line {
-    background-color: blue;
-    justify-content: space-around;
-    display: flex;
-}
-
-.exploit .target-info {
-    width: 100%;
-}
-th {
-    border-bottom: 1px solid black;
-}
-
-tr:nth-child(odd) {
-    background-color: white;
-}
-tr:nth-child(even) {
-    background-color: blue;
-}
+th:nth-child(2),
+th:nth-child(3),
 td:nth-child(2),
 td:nth-child(3) {
-    text-align: center;
+    text-align: center!important;
 }

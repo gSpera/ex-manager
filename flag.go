@@ -7,7 +7,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func FlagRetriveWriter(l *log.Entry, e *Exploit) io.Writer {
+// FlagRetriveWriter creates a io.Writer, when wrote the content is logged and flags are searched
+func FlagRetriveWriter(l *log.Entry, t Target, e *Exploit) io.Writer {
 	pr, pw := io.Pipe()
 
 	go func() {
@@ -20,14 +21,15 @@ func FlagRetriveWriter(l *log.Entry, e *Exploit) io.Writer {
 
 			if err != nil {
 				log.Error("Cannot read:", err)
+				return
 			}
 
 			f := e.service.session.SearchFlagsInText(string(line))
-			e.foundFlag(f...)
+			e.foundFlag(t, f...)
 
-			l.Println("Output:", string(line))
+			l.Println("Program Stdout:", string(line))
 			if len(f) > 0 {
-				l.Println("Found: ", f)
+				l.Println("Found Flags: ", f)
 			}
 		}
 	}()

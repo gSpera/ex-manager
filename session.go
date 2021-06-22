@@ -51,7 +51,10 @@ func NewSessionFromFile(fl string) (*Session, error) {
 	}
 
 	s := &Session{}
-	json.Unmarshal(bd, s)
+	err = json.Unmarshal(bd, s)
+	if err != nil {
+		return &Session{}, err
+	}
 	return s, nil
 }
 
@@ -87,7 +90,9 @@ func (s *Session) Work() error {
 
 func (s *Session) WorkAdd(n int) {
 	for i := 0; i < n; i++ {
-		go s.Work()
+		go func() {
+			log.Error(s.Work())
+		}()
 	}
 }
 
@@ -112,6 +117,17 @@ func (s *Session) GetServiceByName(name string) *Service {
 
 func (s *Session) Stop() {
 	s.cancel()
+}
+
+func (s *Session) AllExploits() []*Exploit {
+	exs := make([]*Exploit, 0, len(s.services)*2)
+	for _, service := range s.ListServices() {
+		for _, exploit := range service.exploits {
+			exs = append(exs, exploit)
+		}
+	}
+
+	return exs
 }
 
 func (s *Session) getExploit() (*Exploit, bool) {

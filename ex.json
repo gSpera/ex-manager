@@ -1,0 +1,46 @@
+{
+	"Name": "Test",
+	"Targets": [
+		"0",
+		"127"
+	],
+	"FlagRegex": "CCIT",
+	"Services": [
+		{
+			"Name": "Biomarkt",
+			"Exploits": [
+				{
+					"Name": "ExploitName",
+					"Flags": {
+						"0": [
+							"1",
+							"2"
+						],
+						"127": []
+					},
+					"CommandName": "./check"
+				}
+			]
+		},
+		{
+			"Name": "Il Bonus",
+			"Exploits": [
+				{
+					"Name": "Il bonus",
+					"Flags": {},
+					"CommandName": "ilbonus"
+				},
+				{
+					"Name": "Il",
+					"Flags": {},
+					"CommandName": "ilbonus"
+				},
+				{
+					"Name": "bonus",
+					"Flags": {},
+					"CommandName": "ilbonus"
+				}
+			]
+		}
+	]
+}
