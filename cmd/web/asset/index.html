@@ -17,21 +17,15 @@
 </head>
 
 <body>
-    <nav class="navbar">
+    <nav id="navbar">
         <h1 class="title is-1 navbar-brand mg-medium">
-            {{.SessionName}}
         </h1>
     </nav>
 
-    <main class="section has-background-info-light">
-        {{range .Services}}
-        <div class="service section box">
-            <h2 class="title is-2">{{.Name}}</h2>
-            {{range .Exploits}}
+    <div id="global-modal"></div>
 
-            {{end}}
-        </div>
-        {{end}}
+    <main class="section has-background-info-light">
+        <div id="services-root"></div>
 
         <div id="add-service" class="section box">
             <div class="title is-2 has-text-centered">

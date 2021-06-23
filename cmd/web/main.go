@@ -78,12 +78,15 @@ func main() {
 		log:     log.New(),
 	}
 
-	http.HandleFunc("/", serverHandler(s, handleHome))
-	http.Handle("/static/", http.FileServer(http.Dir(".")))
+	// http.HandleFunc("/", serverHandler(s, handleHome))
+	http.Handle("/", http.FileServer(http.Dir("cmd/web/asset")))
 	http.HandleFunc("/targets", serverHandler(s, handleApiTarget))
 	http.HandleFunc("/api/newService", serverHandler(s, handleApiNewService))
-	http.HandleFunc("/api/exploitStart", serverHandler(s, handleApiExploitStart))
+	http.HandleFunc("/api/exploitChangeState", serverHandler(s, handleApiExploitSetState))
+	http.HandleFunc("/api/sessionStatus", serverHandler(s, handleApiSessionStatus))
 	http.HandleFunc("/flags", serverHandler(s, handleApiFlags))
+	http.HandleFunc("/api/serviceStatus", serverHandler(s, handleApiServiceStatus))
+	http.HandleFunc("/api/exploitStatus", serverHandler(s, handleApiExploitStatus))
 	http.HandleFunc("/api/name", serverHandler(s, handleApiName))
 
 	log.Infoln("Listening on :8080")

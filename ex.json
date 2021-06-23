@@ -31,19 +31,19 @@
 				{
 					"Name": "Il bonus",
 					"Flags": {},
-					"State": "",
+					"State": "Running",
 					"CommandName": "ilbonus"
 				},
 				{
 					"Name": "Il",
 					"Flags": {},
-					"State": "",
+					"State": "Paused",
 					"CommandName": "ilbonus"
 				},
 				{
 					"Name": "bonus",
 					"Flags": {},
-					"State": "",
+					"State": "Running",
 					"CommandName": "ilbonus"
 				}
 			]

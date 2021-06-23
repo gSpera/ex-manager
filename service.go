@@ -22,6 +22,16 @@ func (s *Service) AddExploit(e *Exploit) {
 	s.exploits = append(s.exploits, e)
 }
 
+func (s *Service) GetExploitByName(name string) *Exploit {
+	for _, e := range s.Exploits() {
+		if e.name == name {
+			return e
+		}
+	}
+
+	return nil
+}
+
 func (s *Service) Exploits() []*Exploit {
 	return s.exploits
 }

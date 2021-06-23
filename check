@@ -11,4 +11,4 @@ done
 
 echo $target
 F=$(base64 /dev/random | head -c5)
-echo "Lorem ipsum CCIT{$F} ."
+echo "Lorem ipsum CCIT{$F}."
