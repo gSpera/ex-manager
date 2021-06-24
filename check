@@ -1,6 +1,5 @@
 #!/bin/sh
 
-
 target=""
 while getopts "t:" flag; do
     case $flag in
@@ -10,5 +9,7 @@ while getopts "t:" flag; do
 done
 
 echo $target
-F=$(base64 /dev/random | head -c5)
+F=$(base64 /dev/urandom | head -c5)
 echo "Lorem ipsum CCIT{$F}."
+
+sleep 10

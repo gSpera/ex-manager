@@ -134,21 +134,41 @@ class Exploit extends React.Component {
     }
 }
 
-class Component extends React.Component {
-    constructor(props) { super(props); }
+class GlobalModal extends React.Component {
+    constructor (props) { super(props); this.state = {service: "Biomarkt"}}
 
     render() {
-        return <h1>A</h1>;
+        return <div className="modal is-active">
+            <div className="modal-background"></div>
+            <div className="modal-card">
+                <header className="modal-card-head">
+                    <h1 className="title is-3">Upload exploit</h1>
+                    <h2 className="subtitle is-4">Service: {this.state.service}</h2>
+                </header>
+                <div className="modal-card-body">
+                    <form>
+                        <input type="file" name="file"/>
+                        <span className="tag is-warning">The file will be overwritten</span>
+                        <button>Upload</button>
+                    </form>
+                </div>
+            </div>
+        </div>;
     }
 }
 
+const modalRef = React.createRef();
+ReactDOM.render(
+    <GlobalModal/>,
+    document.getElementById("global-modal"),
+)
 fetch("/api/sessionStatus")
     .then(r => r.json())
     .then(r => {
         document.querySelector("#navbar > h1").innerText = r["Name"];
 
         ReactDOM.render(
-            <Services services={r["Services"]} />,
+            <Services services={r["Services"]} modalRef={modalRef} />,
             document.getElementById("services-root")
         );
     })
