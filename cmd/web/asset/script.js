@@ -1,10 +1,11 @@
 function Services(props) {
     return <div>
         {
-            props.services.map(service => <Service key={service} name={service} />)
+            props.services.map(service => <Service key={service} name={service} refUploadExploit={props.modalRef} />)
         }
     </div>
 }
+
 class Service extends React.Component {
     constructor(props) {
         super(props);
@@ -12,7 +13,17 @@ class Service extends React.Component {
             exploits: [],
         };
         this.update = this.update.bind(this);
+        this.newExploit = this.newExploit.bind(this);
         this.update();
+    }
+
+    newExploit() {
+        const modal = this.props.refUploadExploit.current;
+        modal.setState({
+            ...modal.state,
+            service: this.props.name,
+            hidden: false,
+        });
     }
 
     componentDidMount() {
@@ -32,7 +43,10 @@ class Service extends React.Component {
 
     render() {
         return <div className="service box">
-            <h2 className="title is-2">{this.props.name}</h2>
+            <div className="level">
+                <h2 className="title is-2">{this.props.name}</h2>
+                <button onClick={this.newExploit} className="icon is-primary is-large is-inverted button">+</button>
+            </div>
             {
                 this.state.exploits.map(exploit =>
                     <Exploit service={this.props.name} name={exploit} key={this.props.name + "-" + exploit} />
@@ -135,31 +149,93 @@ class Exploit extends React.Component {
 }
 
 class GlobalModal extends React.Component {
-    constructor (props) { super(props); this.state = {service: "Biomarkt"}}
+    constructor(props) {
+        super(props);
+        this.state = {
+            hidden: true,
+            exploit: "",
+            cmd: "",
+        };
+        this.fileInput = React.createRef();
+        this.uploadFile = this.uploadFile.bind(this);
+    }
+
+    uploadFile(e) {
+        // csrf??
+        e.preventDefault();
+        const content = new FormData();
+        content.append("service", this.state.service);
+        content.append("exploit", this.state.exploit);
+        content.append("cmd", this.state.cmd);
+        content.append("file", this.fileInput.current.files[0]);
+
+        fetch("/api/uploadExploit", {
+            method: "POST",
+            body: content,
+        })
+            .then(r => r.json())
+            .then(r => {
+                if (r["Ok"]) {
+                    this.setState({
+                        ...this.state,
+                        service: "ERROR",
+                        hidden: true,
+                    });
+                    // notification
+                } else {
+                    alert("Cannot upload file");
+                    console.log(r["Reason"]);
+                    // notification
+                }
+            })
+            .catch(err => console.error(err));
+    }
+
+    onChange(what, e) {
+        let newState = this.state;
+        switch (what) {
+            case "name":
+                newState.exploit = e.target.value;
+                break;
+            case "cmd":
+                newState.cmd = e.target.value;
+                break;
+            default:
+                alert("what");
+                break;
+        }
+
+        this.setState(newState);
+    }
 
     render() {
-        return <div className="modal is-active">
+        return <div className={"modal " + (this.state.hidden ? "" : "is-active")}>
             <div className="modal-background"></div>
             <div className="modal-card">
                 <header className="modal-card-head">
-                    <h1 className="title is-3">Upload exploit</h1>
-                    <h2 className="subtitle is-4">Service: {this.state.service}</h2>
+                    <div className="modal-card-title">
+                        <h1 className="title is-3">Upload exploit</h1>
+                        <h2 className="subtitle is-4">Service: {this.state.service}</h2>
+                    </div>
+                    <button className="delete" aria-label="close" onClick={() => this.setState({ ...this.state, hidden: true })}></button>
                 </header>
                 <div className="modal-card-body">
-                    <form>
-                        <input type="file" name="file"/>
-                        <span className="tag is-warning">The file will be overwritten</span>
-                        <button>Upload</button>
+                    <form id="modal-upload" onSubmit={this.uploadFile}>
+                        <input placeholder="Exploit Name" className="input" type="text" name="name" onChange={(e) => this.onChange("name", e)} />
+                        <input placeholder="Exploit Command" className="input" type="text" name="cmd" onChange={(e) => this.onChange("cmd", e)} />
+                        <input className="input" type="file" name="file" ref={this.fileInput} />
+                        <span className="notification is-warning is-small">The file will be overwritten</span>
+                        <button className="button" onClick={this.uploadFile}>Upload</button>
                     </form>
                 </div>
             </div>
-        </div>;
+        </div >;
     }
 }
 
 const modalRef = React.createRef();
 ReactDOM.render(
-    <GlobalModal/>,
+    <GlobalModal ref={modalRef} />,
     document.getElementById("global-modal"),
 )
 fetch("/api/sessionStatus")

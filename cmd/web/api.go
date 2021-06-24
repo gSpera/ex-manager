@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gSpera/ex-manager"
 )
@@ -162,5 +163,56 @@ func handleApiFlags(s *Server, rw http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		s.log.Errorf("Encode flags:", err)
+	}
+}
+
+func handleApiUploadExploit(s *Server, rw http.ResponseWriter, r *http.Request) {
+	serviceName := r.FormValue("service")
+	exploitName := r.FormValue("exploit")
+	cmdName := r.FormValue("cmd")
+	var service *ex.Service
+	var exploit *ex.Exploit
+
+	res := struct {
+		Ok     bool
+		Reason string
+	}{}
+
+	if strings.TrimSpace(exploitName) == "" {
+		res.Ok = false
+		res.Reason = "invalid name"
+		goto done
+	}
+
+	if strings.TrimSpace(cmdName) == "" {
+		res.Ok = false
+		res.Reason = "no command"
+		goto done
+	}
+
+	service = s.session.GetServiceByName(serviceName)
+	if service == nil {
+		res.Ok = false
+		res.Reason = "cannot find service"
+		goto done
+	}
+
+	if service.GetExploitByName(exploitName) != nil {
+		res.Ok = false
+		res.Reason = "not unique name"
+		goto done
+	}
+
+	exploit = ex.NewExploit(exploitName, cmdName)
+	service.AddExploit(exploit)
+
+	res.Ok = true
+	res.Reason = "done"
+	goto done
+
+done:
+	err := json.NewEncoder(rw).Encode(res)
+	if err != nil {
+		s.log.Errorln("Cannot encode json:", err)
 	}
 }

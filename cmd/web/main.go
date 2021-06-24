@@ -85,6 +85,7 @@ func main() {
 	http.HandleFunc("/api/exploitChangeState", serverHandler(s, handleApiExploitSetState))
 	http.HandleFunc("/api/sessionStatus", serverHandler(s, handleApiSessionStatus))
 	http.HandleFunc("/flags", serverHandler(s, handleApiFlags))
+	http.HandleFunc("/api/uploadExploit", serverHandler(s, handleApiUploadExploit))
 	http.HandleFunc("/api/serviceStatus", serverHandler(s, handleApiServiceStatus))
 	http.HandleFunc("/api/exploitStatus", serverHandler(s, handleApiExploitStatus))
 	http.HandleFunc("/api/name", serverHandler(s, handleApiName))
