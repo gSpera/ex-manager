@@ -15,11 +15,11 @@ func serverHandler(s *Server, fn func(*Server, http.ResponseWriter, *http.Reques
 	}
 }
 func handleApiName(s *Server, rw http.ResponseWriter, req *http.Request) {
-	rw.Write([]byte(s.session.Name()))
+	rw.Write([]byte(s.Session.Name()))
 }
 
 func handleApiTarget(s *Server, rw http.ResponseWriter, r *http.Request) {
-	err := json.NewEncoder(rw).Encode(s.session.ListTargets())
+	err := json.NewEncoder(rw).Encode(s.Session.ListTargets())
 	if err != nil {
 		s.log.Errorln("API /targets:", err)
 	}
@@ -35,7 +35,7 @@ func handleApiNewService(s *Server, rw http.ResponseWriter, r *http.Request) {
 	}
 
 	service := ex.NewService(name)
-	s.session.AddService(service)
+	s.Session.AddService(service)
 	fmt.Fprint(rw, "{\"ok\": true}")
 }
 
@@ -48,7 +48,7 @@ func handleApiExploitSetState(s *Server, rw http.ResponseWriter, r *http.Request
 		return
 	}
 
-	service := s.session.GetServiceByName(serviceName)
+	service := s.Session.GetServiceByName(serviceName)
 	if serviceName == "" || exploitName == "" {
 		http.Error(rw, "{\"ok\": false}", http.StatusBadRequest)
 		return
@@ -75,10 +75,10 @@ func handleApiSessionStatus(s *Server, rw http.ResponseWriter, r *http.Request) 
 		Services []string
 	}{}
 
-	m.Name = s.session.Name()
+	m.Name = s.Session.Name()
 	m.Services = []string{}
 
-	for _, service := range s.session.ListServices() {
+	for _, service := range s.Session.ListServices() {
 		m.Services = append(m.Services, service.Name())
 	}
 
@@ -87,7 +87,7 @@ func handleApiSessionStatus(s *Server, rw http.ResponseWriter, r *http.Request) 
 
 func handleApiServiceStatus(s *Server, rw http.ResponseWriter, r *http.Request) {
 	serviceName := r.FormValue("service")
-	service := s.session.GetServiceByName(serviceName)
+	service := s.Session.GetServiceByName(serviceName)
 	if service == nil {
 		http.Error(rw, "No service", http.StatusNotFound)
 		return
@@ -109,7 +109,7 @@ func handleApiExploitStatus(s *Server, rw http.ResponseWriter, r *http.Request) 
 	serviceName := r.FormValue("service")
 	exploitName := r.FormValue("exploit")
 
-	service := s.session.GetServiceByName(serviceName)
+	service := s.Session.GetServiceByName(serviceName)
 	if service == nil {
 		http.Error(rw, "No service", http.StatusNotFound)
 		return
@@ -151,7 +151,7 @@ func handleApiFlags(s *Server, rw http.ResponseWriter, r *http.Request) {
 	// serviceName := r.FormValue("serviceName")
 	// exploitName := r.FormValue("exploitName")
 	list := make(map[string]map[ex.Target][]ex.Flag)
-	for _, service := range s.session.ListServices() {
+	for _, service := range s.Session.ListServices() {
 		for _, e := range service.Exploits() {
 			list[service.Name()+"-"+e.Name()] = e.Flags()
 		}
@@ -170,48 +170,81 @@ func handleApiUploadExploit(s *Server, rw http.ResponseWriter, r *http.Request) 
 	serviceName := r.FormValue("service")
 	exploitName := r.FormValue("exploit")
 	cmdName := r.FormValue("cmd")
+
 	var service *ex.Service
 	var exploit *ex.Exploit
+	var filename string
 
 	res := struct {
 		Ok     bool
 		Reason string
+		Name   string
+		code   int
 	}{}
+	res.Ok = false
+	res.Name = ""
+
+	file, fileHeader, err := r.FormFile("file")
+	if err != nil {
+		res.Reason = "no content"
+		res.code = http.StatusBadRequest
+		goto done
+	}
+
+	if fileHeader.Size > maxUploadSize {
+		res.Reason = "too big"
+		res.code = http.StatusRequestEntityTooLarge
+		goto done
+	}
+
+	if strings.TrimSpace(fileHeader.Filename) == "" {
+		res.Reason = "no name"
+		res.code = http.StatusBadRequest
+		goto done
+	}
 
 	if strings.TrimSpace(exploitName) == "" {
-		res.Ok = false
-		res.Reason = "invalid name"
+		res.Reason = "invalid exploit"
+		res.code = http.StatusBadRequest
 		goto done
 	}
 
 	if strings.TrimSpace(cmdName) == "" {
-		res.Ok = false
 		res.Reason = "no command"
+		res.code = http.StatusBadRequest
 		goto done
 	}
 
-	service = s.session.GetServiceByName(serviceName)
+	service = s.Session.GetServiceByName(serviceName)
 	if service == nil {
-		res.Ok = false
 		res.Reason = "cannot find service"
+		res.code = http.StatusNotFound
 		goto done
 	}
 
 	if service.GetExploitByName(exploitName) != nil {
-		res.Ok = false
 		res.Reason = "not unique name"
+		res.code = http.StatusNotFound
 		goto done
 	}
 
 	exploit = ex.NewExploit(exploitName, cmdName)
 	service.AddExploit(exploit)
 
+	filename, err = s.UploadFile(serviceName, exploitName, fileHeader.Filename, file)
+
+	if err != nil {
+		res.Reason = "upload"
+		goto done
+	}
+
 	res.Ok = true
 	res.Reason = "done"
+	res.Name = filename
 	goto done
 
 done:
-	err := json.NewEncoder(rw).Encode(res)
+	err = json.NewEncoder(rw).Encode(res)
 	if err != nil {
 		s.log.Errorln("Cannot encode json:", err)
 	}

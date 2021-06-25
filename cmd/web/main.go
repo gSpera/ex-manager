@@ -28,21 +28,6 @@ type Server struct {
 }
 
 func main() {
-	// exs, err := ex.NewSessionFromFile("ex.json")
-	// if err != nil {
-	// 	log.Fatalln("Cannot create session:", err)
-	// 	return
-	// }
-
-	// data, err := json.MarshalIndent(exs, "", "\t")
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// err = os.WriteFile("ex.json", data, 0666)
-	// if err != nil {
-	// 	panic(err)
-	// }
-
 	ctx, cancel := context.WithCancel(context.Background())
 
 	s := &Server{
