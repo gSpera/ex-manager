@@ -1,0 +1,104 @@
+{
+	"ExConfig": {
+		"Name": "Test",
+		"Targets": [
+			"0",
+			"127"
+		],
+		"FlagRegex": "CCIT\\{.*\\}",
+		"SubmitCommand": "./submit",
+		"SubmitTime": 10,
+		"Services": [
+			{
+				"Name": "BiomarktA",
+				"Exploits": [
+					{
+						"Name": "ExploitName",
+						"Flags": {
+							"0": [
+								"1",
+								"2",
+								"CCIT{qATCE}",
+								"CCIT{Q3lZc}",
+								"CCIT{ufZV6}",
+								"CCIT{uhwJZ}",
+								"CCIT{F6EjN}",
+								"CCIT{fNA0r}",
+								"CCIT{6Da2Y}",
+								"CCIT{I15z0}",
+								"CCIT{TxrM3}",
+								"CCIT{3Nv1g}",
+								"CCIT{ovtXG}",
+								"CCIT{Q3sor}",
+								"CCIT{p4I5L}",
+								"CCIT{VoRXL}",
+								"CCIT{qtJrp}"
+							],
+							"127": [
+								"CCIT{IdOPx}",
+								"CCIT{Nn55M}",
+								"CCIT{S7x+N}",
+								"CCIT{twe2s}",
+								"CCIT{gGeyr}",
+								"CCIT{l3isU}",
+								"CCIT{YuzJC}",
+								"CCIT{i2jqK}",
+								"CCIT{mMdlp}",
+								"CCIT{hvrce}",
+								"CCIT{0i5Zq}",
+								"CCIT{VHh94}",
+								"CCIT{hiUW7}",
+								"CCIT{yz/pf}",
+								"CCIT{3yBqp}",
+								"CCIT{hLif/}",
+								"CCIT{EH99B}",
+								"CCIT{/d8lL}",
+								"CCIT{4oe0G}",
+								"CCIT{Vuigh}",
+								"CCIT{+TEIH}",
+								"CCIT{wAXhS}",
+								"CCIT{2huTA}",
+								"CCIT{t3tLi}",
+								"CCIT{zT6t0}",
+								"CCIT{9z3eP}",
+								"CCIT{lokof}",
+								"CCIT{p+T2n}",
+								"CCIT{E0FqM}",
+								"CCIT{UsylF}",
+								"CCIT{LCD+J}"
+							]
+						},
+						"State": "Running",
+						"CommandName": "./check"
+					}
+				]
+			},
+			{
+				"Name": "Il Bonus",
+				"Exploits": [
+					{
+						"Name": "Il bonus",
+						"Flags": {},
+						"State": "Running",
+						"CommandName": "ilbonus"
+					},
+					{
+						"Name": "Il",
+						"Flags": {},
+						"State": "Paused",
+						"CommandName": "ilbonus"
+					},
+					{
+						"Name": "bonus",
+						"Flags": {},
+						"State": "Running",
+						"CommandName": "ilbonus"
+					}
+				]
+			}
+		]
+	},
+	"Config": {
+		"Address": ":8080"
+	}
+}

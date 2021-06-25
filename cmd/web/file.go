@@ -8,8 +8,6 @@ import (
 	"strings"
 )
 
-const uploadRoot = "ex"
-
 // UploadFile uploads a new file for an exploit
 // the file will have the execution bit set for the user
 func (s *Server) UploadFile(serviceName string, exploitName string, fileName string, content io.ReadCloser) (filepath string, err error) {

@@ -14,7 +14,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const maxUploadSize = 10 << 20 //10Megabibyte
+const (
+	maxUploadSize = 10 << 20 //10Megabibyte
+	uploadRoot    = "exploits"
+)
 
 type Server struct {
 	Session *ex.Session `json:"ExConfig"`
