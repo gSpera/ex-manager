@@ -1,96 +1,129 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	"time"
 
 	"github.com/gSpera/ex-manager"
 	log "github.com/sirupsen/logrus"
 )
 
+const maxUploadSize = 10 << 20 //10Megabibyte
+
 type Server struct {
-	session *ex.Session
-	log     *log.Logger
-}
-type ServerValue struct {
-	SessionName string
-	Services    []ServiceValue
-}
-type ServiceValue struct {
-	Name     string
-	Exploits []ExploitValue
-}
-type ExploitValue struct {
-	Name  string
-	State string
-}
-
-func (s *Server) Value() ServerValue {
-	return ServerValue{
-		SessionName: s.session.Name(),
-		Services:    services(s),
-	}
-}
-
-func services(s *Server) []ServiceValue {
-	services := make([]ServiceValue, len(s.session.ListServices()))
-	for i, service := range s.session.ListServices() {
-		services[i] = ServiceValue{
-			Name:     service.Name(),
-			Exploits: exploit(service),
-		}
-	}
-	return services
-}
-
-func exploit(s *ex.Service) []ExploitValue {
-	exploits := make([]ExploitValue, len(s.Exploits()))
-
-	for i, v := range s.Exploits() {
-		exploits[i] = ExploitValue{Name: v.Name(), State: v.CurrentStateString()}
+	Session *ex.Session `json:"ExConfig"`
+	Config  struct {
+		Address string
 	}
 
-	return exploits
+	log       *log.Logger
+	ctx       context.Context
+	ctxCancel context.CancelFunc
 }
 
 func main() {
-	exs, err := ex.NewSessionFromFile("ex.json")
-	if err != nil {
-		log.Fatalln("Cannot create session:", err)
-		return
-	}
+	// exs, err := ex.NewSessionFromFile("ex.json")
+	// if err != nil {
+	// 	log.Fatalln("Cannot create session:", err)
+	// 	return
+	// }
 
-	exs.WorkAdd(10)
-	go exs.WorkSubmitter()
+	// data, err := json.MarshalIndent(exs, "", "\t")
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// err = os.WriteFile("ex.json", data, 0666)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	data, err := json.MarshalIndent(exs, "", "\t")
-	if err != nil {
-		panic(err)
-	}
-	err = os.WriteFile("ex.json", data, 0666)
-	if err != nil {
-		panic(err)
-	}
+	ctx, cancel := context.WithCancel(context.Background())
 
 	s := &Server{
-		session: exs,
-		log:     log.New(),
+		ctx:       ctx,
+		ctxCancel: cancel,
+		log:       log.New(),
+	}
+	s.Config.Address = ":8080"
+
+	config, err := ioutil.ReadFile("exm.json")
+	err = json.Unmarshal(config, &s)
+	if err != nil {
+		log.Errorln("Cannot decode config")
+		os.Exit(1)
 	}
 
-	// http.HandleFunc("/", serverHandler(s, handleHome))
-	http.Handle("/", http.FileServer(http.Dir("cmd/web/asset")))
-	http.HandleFunc("/targets", serverHandler(s, handleApiTarget))
-	http.HandleFunc("/api/newService", serverHandler(s, handleApiNewService))
-	http.HandleFunc("/api/exploitChangeState", serverHandler(s, handleApiExploitSetState))
-	http.HandleFunc("/api/sessionStatus", serverHandler(s, handleApiSessionStatus))
-	http.HandleFunc("/flags", serverHandler(s, handleApiFlags))
-	http.HandleFunc("/api/uploadExploit", serverHandler(s, handleApiUploadExploit))
-	http.HandleFunc("/api/serviceStatus", serverHandler(s, handleApiServiceStatus))
-	http.HandleFunc("/api/exploitStatus", serverHandler(s, handleApiExploitStatus))
-	http.HandleFunc("/api/name", serverHandler(s, handleApiName))
+	exs := s.Session
 
-	log.Infoln("Listening on :8080")
-	err = http.ListenAndServe(":8080", nil)
-	log.Fatalln("Listening ", err)
+	exs.WorkAdd(10)
+	go exs.WorkSubmitter(ctx.Done())
+
+	httpMux := http.NewServeMux()
+	httpServer := &http.Server{
+		Addr: s.Config.Address,
+
+		Handler:     httpMux,
+		BaseContext: func(net.Listener) context.Context { return s.ctx },
+	}
+
+	quit := make(chan struct{})
+	stopCh := make(chan os.Signal, 1)
+	signal.Notify(stopCh, os.Interrupt)
+	go func() {
+		<-stopCh
+		s.log.Println("Closing, Interrupt detected")
+		go func() {
+			time.Sleep(10 * time.Second)
+			log.Errorln("Force exiting timeout")
+			os.Exit(1)
+		}()
+
+		s.ctxCancel()
+		httpServer.Close()
+		s.Session.Stop()
+		fl, err := os.Create("exm.json")
+		if err != nil {
+			s.log.Errorln("Couldn't open json:", err)
+			return
+		}
+
+		jsonEncoder := json.NewEncoder(fl)
+		jsonEncoder.SetIndent("", "\t")
+		err = jsonEncoder.Encode(s)
+		if err != nil {
+			s.log.Errorln("Could not encode:", err)
+			return
+		}
+		fl.Close()
+
+		s.log.Writer().Close()
+		log.Println("Done closing")
+		quit <- struct{}{}
+	}()
+
+	// http.HandleFunc("/", serverHandler(s, handleHome))
+
+	httpMux.Handle("/", http.FileServer(http.Dir("cmd/web/asset")))
+
+	httpMux.HandleFunc("/targets", serverHandler(s, handleApiTarget))
+
+	httpMux.HandleFunc("/api/newService", serverHandler(s, handleApiNewService))
+	httpMux.HandleFunc("/api/exploitChangeState", serverHandler(s, handleApiExploitSetState))
+	httpMux.HandleFunc("/api/sessionStatus", serverHandler(s, handleApiSessionStatus))
+	httpMux.HandleFunc("/flags", serverHandler(s, handleApiFlags))
+	httpMux.HandleFunc("/api/uploadExploit", serverHandler(s, handleApiUploadExploit))
+	httpMux.HandleFunc("/api/serviceStatus", serverHandler(s, handleApiServiceStatus))
+	httpMux.HandleFunc("/api/exploitStatus", serverHandler(s, handleApiExploitStatus))
+	httpMux.HandleFunc("/api/name", serverHandler(s, handleApiName))
+
+	log.Infoln("Listening on", httpServer.Addr)
+	err = httpServer.ListenAndServe()
+	log.Errorln("Listening ", err)
+	<-quit
 }

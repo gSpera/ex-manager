@@ -132,12 +132,18 @@ func (s *Session) AllExploits() []*Exploit {
 	return exs
 }
 
-func (s *Session) WorkSubmitter() {
+func (s *Session) WorkSubmitter(ctxDone <-chan struct{}) {
 	for {
-		<-s.submitter.ticker.C
-		s.submitter.Submit()
+		select {
+		case <-s.submitter.ticker.C:
+			s.submitter.Submit()
+		case <-ctxDone:
+			s.submitter.Submit()
+			return
+		}
 	}
 }
+
 func (s *Session) getExploit() (*Exploit, bool) {
 	if len(s.services) == 0 {
 		return nil, false
