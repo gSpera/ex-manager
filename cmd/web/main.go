@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto/sha1"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -24,6 +26,8 @@ type Server struct {
 	Config  struct {
 		Address string
 	}
+
+	Users map[string]string
 
 	log       *log.Logger
 	ctx       context.Context
@@ -96,6 +100,40 @@ func main() {
 	}()
 
 	// http.HandleFunc("/", serverHandler(s, handleHome))
+
+	httpMux.HandleFunc("/login", func(rw http.ResponseWriter, r *http.Request) {
+		user, password, ok := r.BasicAuth()
+
+		if !ok {
+			rw.Header().Add("WWW-Authenticate", "Basic realm=\"Fai schifo\"")
+			http.Error(rw, "Not logged in", http.StatusUnauthorized)
+			return
+		}
+
+		hash, ok := s.Users[user]
+		if !ok {
+			http.Error(rw, "User not found", http.StatusUnauthorized)
+			return
+		}
+
+		h := sha1.New()
+		h.Write([]byte(password))
+		hashed := fmt.Sprintf("%x", h.Sum(nil))
+
+		if hash != hashed {
+			fmt.Printf("%q %q", password, hashed)
+			s.log.Warnln("User attempted to autheticate:", user, password, hash, hashed)
+			http.Error(rw, "Not valid", http.StatusUnauthorized)
+			return
+		}
+
+		fmt.Fprintf(rw, "Ok")
+		return
+	})
+
+	httpMux.HandleFunc("/unlog", func(rw http.ResponseWriter, r *http.Request) {
+		http.Error(rw, "Unlogged", http.StatusUnauthorized)
+	})
 
 	httpMux.Handle("/", http.FileServer(http.Dir("cmd/web/asset")))
 
