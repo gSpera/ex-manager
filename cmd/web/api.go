@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path"
 	"strings"
 
 	"github.com/gSpera/ex-manager"
@@ -179,6 +180,7 @@ func handleApiUploadExploit(s *Server, rw http.ResponseWriter, r *http.Request) 
 	var service *ex.Service
 	var exploit *ex.Exploit
 	var filename string
+	var directory string
 
 	res := struct {
 		Ok     bool
@@ -233,15 +235,16 @@ func handleApiUploadExploit(s *Server, rw http.ResponseWriter, r *http.Request) 
 		goto done
 	}
 
-	exploit = ex.NewExploit(exploitName, cmdName)
-	service.AddExploit(exploit)
-
 	filename, err = s.UploadFile(serviceName, exploitName, fileHeader.Filename, file)
 
 	if err != nil {
 		res.Reason = "upload"
 		goto done
 	}
+
+	directory = path.Dir(filename)
+	exploit = ex.NewExploit(exploitName, cmdName, directory)
+	service.AddExploit(exploit)
 
 	res.Ok = true
 	res.Reason = "done"

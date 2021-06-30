@@ -78,10 +78,11 @@ func (e *Exploit) UnmarshalJSON(b []byte) error {
 	m := struct {
 		Name string
 
-		Patched     map[Target]bool
-		Flags       map[Target][]Flag
-		State       string
-		CommandName string
+		Patched      map[Target]bool
+		Flags        map[Target][]Flag
+		State        string
+		CommandName  string
+		ExecutionDir string
 	}{}
 
 	err := json.Unmarshal(b, &m)
@@ -93,6 +94,7 @@ func (e *Exploit) UnmarshalJSON(b []byte) error {
 		return fmt.Errorf("No exploit name")
 	}
 	e.cmdName = m.CommandName
+	e.executionDir = m.ExecutionDir
 	e.state = Paused
 
 	e.flags = m.Flags
@@ -144,16 +146,18 @@ func (s *Service) MarshalJSON() ([]byte, error) {
 
 func (e *Exploit) MarshalJSON() ([]byte, error) {
 	m := struct {
-		Name        string
-		Flags       map[Target][]Flag
-		Patched     map[Target]bool `json:",omitempty"`
-		State       ExploitState
-		CommandName string
+		Name         string
+		Flags        map[Target][]Flag
+		Patched      map[Target]bool `json:",omitempty"`
+		State        ExploitState
+		CommandName  string
+		ExecutionDir string
 	}{}
 
 	m.Name = e.name
 	m.Flags = e.flags
 	m.CommandName = e.cmdName
+	m.ExecutionDir = e.executionDir
 	m.State = e.state
 	return json.Marshal(m)
 }
