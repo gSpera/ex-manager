@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"crypto/sha1"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -12,7 +10,6 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/gSpera/ex-manager"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -21,24 +18,12 @@ const (
 	uploadRoot    = "exploits"
 )
 
-type Server struct {
-	Session *ex.Session `json:"ExConfig"`
-	Config  struct {
-		Address string
-	}
-
-	Users map[string]string
-
-	log       *log.Logger
-	ctx       context.Context
-	ctxCancel context.CancelFunc
-}
-
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	s := &Server{
 		ctx:       ctx,
+		ServeMux:  http.NewServeMux(),
 		ctxCancel: cancel,
 		log:       log.New(),
 	}
@@ -47,7 +32,7 @@ func main() {
 	config, err := ioutil.ReadFile("exm.json")
 	err = json.Unmarshal(config, &s)
 	if err != nil {
-		log.Errorln("Cannot decode config")
+		log.Fatalln("Cannot decode config:", err)
 		os.Exit(1)
 	}
 
@@ -56,11 +41,10 @@ func main() {
 	exs.WorkAdd(10)
 	go exs.WorkSubmitter(ctx.Done())
 
-	httpMux := http.NewServeMux()
 	httpServer := &http.Server{
 		Addr: s.Config.Address,
 
-		Handler:     httpMux,
+		Handler:     s.ServeMux,
 		BaseContext: func(net.Listener) context.Context { return s.ctx },
 	}
 
@@ -101,52 +85,16 @@ func main() {
 
 	// http.HandleFunc("/", serverHandler(s, handleHome))
 
-	httpMux.HandleFunc("/login", func(rw http.ResponseWriter, r *http.Request) {
-		user, password, ok := r.BasicAuth()
+	s.HandleServerFunc("/targets", handleApiTarget)
 
-		if !ok {
-			rw.Header().Add("WWW-Authenticate", "Basic realm=\"Fai schifo\"")
-			http.Error(rw, "Not logged in", http.StatusUnauthorized)
-			return
-		}
-
-		hash, ok := s.Users[user]
-		if !ok {
-			http.Error(rw, "User not found", http.StatusUnauthorized)
-			return
-		}
-
-		h := sha1.New()
-		h.Write([]byte(password))
-		hashed := fmt.Sprintf("%x", h.Sum(nil))
-
-		if hash != hashed {
-			fmt.Printf("%q %q", password, hashed)
-			s.log.Warnln("User attempted to autheticate:", user, password, hash, hashed)
-			http.Error(rw, "Not valid", http.StatusUnauthorized)
-			return
-		}
-
-		fmt.Fprintf(rw, "Ok")
-		return
-	})
-
-	httpMux.HandleFunc("/unlog", func(rw http.ResponseWriter, r *http.Request) {
-		http.Error(rw, "Unlogged", http.StatusUnauthorized)
-	})
-
-	httpMux.Handle("/", http.FileServer(http.Dir("cmd/web/asset")))
-
-	httpMux.HandleFunc("/targets", serverHandler(s, handleApiTarget))
-
-	httpMux.HandleFunc("/api/newService", serverHandler(s, handleApiNewService))
-	httpMux.HandleFunc("/api/exploitChangeState", serverHandler(s, handleApiExploitSetState))
-	httpMux.HandleFunc("/api/sessionStatus", serverHandler(s, handleApiSessionStatus))
-	httpMux.HandleFunc("/flags", serverHandler(s, handleApiFlags))
-	httpMux.HandleFunc("/api/uploadExploit", serverHandler(s, handleApiUploadExploit))
-	httpMux.HandleFunc("/api/serviceStatus", serverHandler(s, handleApiServiceStatus))
-	httpMux.HandleFunc("/api/exploitStatus", serverHandler(s, handleApiExploitStatus))
-	httpMux.HandleFunc("/api/name", serverHandler(s, handleApiName))
+	s.HandleServerFunc("/api/newService", handleApiNewService)
+	s.HandleServerFunc("/api/exploitChangeState", handleApiExploitSetState)
+	s.HandleServerFunc("/api/sessionStatus", handleApiSessionStatus)
+	s.HandleServerFunc("/flags", handleApiFlags)
+	s.HandleServerFunc("/api/uploadExploit", handleApiUploadExploit)
+	s.HandleServerFunc("/api/serviceStatus", handleApiServiceStatus)
+	s.HandleServerFunc("/api/exploitStatus", handleApiExploitStatus)
+	s.HandleServerFunc("/api/name", handleApiName)
 
 	log.Infoln("Listening on", httpServer.Addr)
 	err = httpServer.ListenAndServe()
