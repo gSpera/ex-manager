@@ -26,17 +26,22 @@ func handleApiTarget(s *Server, rw http.ResponseWriter, r *http.Request) {
 }
 
 func handleApiNewService(s *Server, rw http.ResponseWriter, r *http.Request) {
-	name := r.FormValue("serviceName")
+	name := r.FormValue("name")
 	s.log.Debugf("Adding service: %q\n", name)
 
 	if name == "" {
-		http.Error(rw, "{\"ok\": false}", http.StatusBadRequest)
+		http.Error(rw, "{\"Ok\": false}", http.StatusBadRequest)
+		return
+	}
+
+	if s.Session.GetServiceByName(name) != nil {
+		http.Error(rw, "{\"Ok\": false}", http.StatusBadRequest)
 		return
 	}
 
 	service := ex.NewService(name)
 	s.Session.AddService(service)
-	fmt.Fprint(rw, "{\"ok\": true}")
+	fmt.Fprint(rw, "{\"Ok\": true}")
 }
 
 func handleApiExploitSetState(s *Server, rw http.ResponseWriter, r *http.Request) {

@@ -1,9 +1,33 @@
-function Services(props) {
-    return <div>
-        {
-            props.services.map(service => <Service key={service} name={service} refUploadExploit={props.modalRef} />)
-        }
-    </div>
+class Services extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { services: [] };
+        this.update = this.update.bind(this);
+    }
+
+    componentDidMount() {
+        const timer = setInterval(() => this.update(), 1000);
+        this.setState({ ...this.state, timer });
+    }
+
+    componentWillUnmount() {
+        clearInterval(this.state.timer);
+    }
+
+    update() {
+        fetch("/api/sessionStatus")
+            .then(r => r.json())
+            .then(r => this.setState({ ...this.state, services: r["Services"] }))
+            .catch(err => console.error(err));
+    }
+
+    render() {
+        return <React.Fragment>
+            {
+                this.state.services.map(service => <Service key={service} name={service} refUploadExploit={this.props.modalRef} />)
+            }
+        </React.Fragment>
+    }
 }
 
 class Service extends React.Component {
@@ -29,6 +53,10 @@ class Service extends React.Component {
     componentDidMount() {
         const timer = setInterval(() => this.update(), 1000);
         this.setState({ ...this.state, timer });
+    }
+
+    componentWillUNmount() {
+        clearInterval(this.state.timer);
     }
 
     update() {
@@ -233,7 +261,34 @@ class GlobalModal extends React.Component {
     }
 }
 
+class ServiceAddComponent extends React.Component {
+    constructor(props) { super(props); this.button = this.button.bind(this); }
+
+    button() {
+        fetch("/api/newService?name=" + this.state.content)
+            .then(r => r.json())
+            .then(r => {
+                if (r["Ok"]) {
+                    // notification
+                } else {
+                    // notification
+                    alert("Error");
+                }
+            })
+            .catch(err => console.error(err))
+    }
+    render() {
+        return <React.Fragment>
+            <div className="title is-2 has-text-centered">
+                Add new service
+            </div>
+            <input type="text" className="input mgh-large" name="service-name" placeholder="Service name" onChange={(e) => this.setState({ ...this.state, content: e.target.value })} />
+            <button id="add-service-btn" className="is-large button mgh-large" onClick={this.button}>Add Service</button>
+        </React.Fragment>;
+    }
+}
 const modalRef = React.createRef();
+const serviceRef = React.createRef();
 ReactDOM.render(
     <GlobalModal ref={modalRef} />,
     document.getElementById("global-modal"),
@@ -244,8 +299,13 @@ fetch("/api/sessionStatus")
         document.querySelector("#navbar > h1").innerText = r["Name"];
 
         ReactDOM.render(
-            <Services services={r["Services"]} modalRef={modalRef} />,
+            <Services services={r["Services"]} modalRef={modalRef} ref={serviceRef} />,
             document.getElementById("services-root")
         );
     })
     .catch(err => console.error(err));
+
+ReactDOM.render(
+    <ServiceAddComponent serviceRef={serviceRef} />,
+    document.getElementById("add-service"),
+);
