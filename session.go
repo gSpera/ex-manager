@@ -103,6 +103,11 @@ func (s *Session) AddTarget(t Target) {
 }
 
 func (s *Session) AddService(service *Service) {
+	if s.GetServiceByName(service.name) != nil {
+		s.log.Warnln("Cannot add service:", service.name, "another service with same name")
+		return
+	}
+
 	service.session = s
 	s.services = append(s.services, service)
 }
