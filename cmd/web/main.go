@@ -83,7 +83,7 @@ func main() {
 		quit <- struct{}{}
 	}()
 
-	// http.HandleFunc("/", serverHandler(s, handleHome))
+	s.Handle("/", http.FileServer(http.FS(assetFS)))
 
 	s.HandleServerFunc("/targets", handleApiTarget)
 
