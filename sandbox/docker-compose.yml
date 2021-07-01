@@ -1,0 +1,10 @@
+version: "3"
+services:
+    sum81:
+        build: summation
+        ports:
+            - "8081:8081"
+    sum82:
+        build: summation
+        ports:
+            - "8082:8081"
