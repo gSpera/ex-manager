@@ -21,16 +21,3 @@ func newLogger(service string, exploit string, id int) *log.Entry {
 	})
 	return entry
 }
-
-func Dump() Session {
-	return Session{
-		name: "A",
-		targets: []string{
-			"1", "2",
-		},
-		services: []*Service{
-			{name: "A"},
-			{name: "A"},
-		},
-	}
-}
