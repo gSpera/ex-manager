@@ -18,6 +18,7 @@ func (s *Session) UnmarshalJSON(b []byte) error {
 		FlagRegex     string
 		SubmitCommand string
 		SubmitTime    time.Duration
+		SubmitLimit   int
 		Flags         flagStoreMarshal
 		Services      []*Service
 	}{}
@@ -40,7 +41,6 @@ func (s *Session) UnmarshalJSON(b []byte) error {
 	if m.SubmitCommand == "" {
 		return fmt.Errorf("No submit command")
 	}
-	s.submitter = NewSubmitter(m.SubmitCommand, m.SubmitTime*time.Second)
 	s.targets = m.Targets
 	if m.FlagRegex == "" {
 		return fmt.Errorf("No regex flag")
@@ -54,6 +54,8 @@ func (s *Session) UnmarshalJSON(b []byte) error {
 	}
 
 	s.flags = m.Flags.FlagStore
+	s.submitter = NewSubmitter(m.SubmitCommand, m.SubmitTime*time.Second, s.log.WithField("what", "submitter"), m.SubmitLimit, s.flags)
+
 	return nil
 }
 
@@ -118,6 +120,7 @@ func (s *Session) MarshalJSON() ([]byte, error) {
 		SubmitCommand string
 		SubmitTime    time.Duration
 		Flags         flagStoreMarshal
+		SubmitLimit   int
 		Services      []*Service
 	}{}
 
@@ -128,6 +131,7 @@ func (s *Session) MarshalJSON() ([]byte, error) {
 	m.Targets = s.targets
 	m.Services = s.services
 	m.Flags = flagStoreMarshal{s.flags}
+	m.SubmitLimit = s.submitter.limitForEachSubmit
 	return json.Marshal(m)
 }
 

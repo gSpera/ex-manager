@@ -2,12 +2,27 @@ package ex
 
 import (
 	"encoding/json"
+	"fmt"
 )
+
+var registeredFlagStores map[string]func() FlagStore = map[string]func() FlagStore{}
+
+// REgisterFlagStore registers a new FlagStore
+func RegisterFlagStore(fl func() FlagStore) {
+	registeredFlagStores[fl().name()] = fl
+}
+
+// flag store
+func init() {
+	RegisterFlagStore(func() FlagStore { return new(MemoryFlagStore) })
+}
 
 // FlagStore stores flags for the session
 type FlagStore interface {
 	Put(...Flag) error
 	GetByName(serviceName string, exploitName string) ([]Flag, error)
+	UpdateState(flagValue string, flagState SubmittedFlagStatus) error
+	GetValueToSubmit(limit int) ([]string, error)
 
 	name() string
 	json.Marshaler
@@ -36,17 +51,30 @@ func (m *MemoryFlagStore) GetByName(serviceName string, exploitName string) ([]F
 	return v, nil
 }
 
-func (m *MemoryFlagStore) MarshalJSON() ([]byte, error) { return json.Marshal((*[]Flag)(m)) }
-func (m *MemoryFlagStore) UnmarshalJSON(body []byte) error {
-	return json.Unmarshal(body, (*[]Flag)(m))
+func (m *MemoryFlagStore) UpdateState(flag string, state SubmittedFlagStatus) error {
+	for i := range *m {
+		if (*m)[i].Value == flag {
+			(*m)[i].Status = state
+			return nil
+		}
+	}
+
+	return fmt.Errorf("no flag found")
 }
 
-var registeredFlagStores map[string]func() FlagStore = map[string]func() FlagStore{}
+func (m *MemoryFlagStore) GetValueToSubmit(limit int) ([]string, error) {
+	res := make([]string, 0, limit)
 
-func RegisterFlagStore(fl func() FlagStore) {
-	registeredFlagStores[fl().name()] = fl
-}
+	for _, f := range *m {
+		if f.Status == FlagNotSubmitted {
+			res = append(res, f.Value)
+			if len(res) == limit {
+				break
+			}
+		}
+	}
 
-func init() {
-	RegisterFlagStore(func() FlagStore { return new(MemoryFlagStore) })
+	return res, nil
 }
+func (m *MemoryFlagStore) MarshalJSON() ([]byte, error)    { return json.Marshal((*[]Flag)(m)) }
+func (m *MemoryFlagStore) UnmarshalJSON(body []byte) error { return json.Unmarshal(body, (*[]Flag)(m)) }

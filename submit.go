@@ -14,48 +14,50 @@ type Submitter struct {
 	state   ExploitState
 	// time is read-only, it is only used for referencing
 	// it may be changed with ticker
-	time          time.Duration
-	ticker        *time.Ticker
-	flagsToSubmit []Flag
+	time               time.Duration
+	log                *log.Entry
+	ticker             *time.Ticker
+	flagStore          FlagStore
+	limitForEachSubmit int
 }
 
-func NewSubmitter(cmd string, submitEvery time.Duration) *Submitter {
+func NewSubmitter(cmd string, submitEvery time.Duration, log *log.Entry, limit int, flagStore FlagStore) *Submitter {
 	s := &Submitter{}
 	s.cmdLine = cmd
 	s.time = submitEvery
 	s.ticker = time.NewTicker(submitEvery)
-	s.state = Paused
-
+	s.limitForEachSubmit = limit
+	s.flagStore = flagStore
+	s.log = log
+	s.state = Running
 	return s
-}
-
-// AddFlags adds to the interal buffer the flag to submit
-func (s *Submitter) AddFlags(flags ...Flag) {
-	s.flagsToSubmit = append(s.flagsToSubmit, flags...)
 }
 
 // Submit sends the flags
 func (s *Submitter) Submit() {
-	// support partial sending??
-	lo := log.New()
-	if len(s.flagsToSubmit) == 0 {
-		lo.Println("No flags")
-		return
-	}
-
-	lo.Println("Sending flags:", s.flagsToSubmit)
-	flagString := make([]FlagValue, len(s.flagsToSubmit))
-	for i := range flagString {
-		flagString[i] = s.flagsToSubmit[i].Value
-	}
-
-	cmd := exec.Command(s.cmdLine, flagString...)
-	cmd.Stdout = lo.Writer()
-	cmd.Stderr = lo.Writer()
-	err := cmd.Run()
+	flags, err := s.flagStore.GetValueToSubmit(s.limitForEachSubmit)
 	if err != nil {
-		lo.Errorln("Cannot send flags:", err)
+		s.log.Errorln("Cannot retrieve flags:", err)
 		return
 	}
-	s.flagsToSubmit = []Flag{}
+	// support partial sending??
+	if len(flags) == 0 {
+		s.log.Println("No flags")
+		return
+	}
+
+	s.log.Println("Sending flags:", flags)
+
+	cmd := exec.Command(s.cmdLine, flags...)
+	cmd.Stdout = s.log.Writer()
+	cmd.Stderr = s.log.Writer()
+	err = cmd.Run()
+	if err != nil {
+		s.log.Errorln("Cannot send flags:", err)
+		return
+	}
+
+	for _, f := range flags {
+		s.flagStore.UpdateState(f, FlagSubmittedSuccesfully)
+	}
 }
