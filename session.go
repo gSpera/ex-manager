@@ -24,9 +24,11 @@ type Session struct {
 	flagRegex *regexp.Regexp
 	services  []*Service
 	submitter *Submitter
+
+	flags FlagStore
 }
 
-func NewSession(name string, flagRegex string, submitCommand string, targets ...Target) (*Session, error) {
+func NewSession(name string, flagRegex string, submitCommand string, flagStore FlagStore, targets ...Target) (*Session, error) {
 	s := &Session{}
 	var err error
 
@@ -42,6 +44,8 @@ func NewSession(name string, flagRegex string, submitCommand string, targets ...
 	if err != nil {
 		return nil, err
 	}
+
+	s.flags = flagStore
 
 	return s, nil
 }
@@ -174,4 +178,12 @@ func (s *Session) randomTarget() string {
 		panic("No targets")
 	}
 	return s.targets[rand.Intn(len(s.targets))]
+}
+
+func (s *Session) AddFlags(flags ...Flag) error {
+	return s.flags.Put(flags...)
+}
+
+func (s *Session) FlagsByExploitName(serviceName string, exploitName string) ([]Flag, error) {
+	return s.flags.GetByName(serviceName, exploitName)
 }

@@ -18,6 +18,7 @@ func (s *Session) UnmarshalJSON(b []byte) error {
 		FlagRegex     string
 		SubmitCommand string
 		SubmitTime    time.Duration
+		Flags         flagStoreMarshal
 		Services      []*Service
 	}{}
 
@@ -51,6 +52,8 @@ func (s *Session) UnmarshalJSON(b []byte) error {
 	for _, mm := range m.Services {
 		s.AddService(mm)
 	}
+
+	s.flags = m.Flags.FlagStore
 	return nil
 }
 
@@ -79,7 +82,6 @@ func (e *Exploit) UnmarshalJSON(b []byte) error {
 		Name string
 
 		Patched      map[Target]bool
-		Flags        map[Target][]Flag
 		State        string
 		CommandName  string
 		ExecutionDir string
@@ -96,12 +98,6 @@ func (e *Exploit) UnmarshalJSON(b []byte) error {
 	e.cmdName = m.CommandName
 	e.executionDir = m.ExecutionDir
 	e.state = Paused
-
-	e.flags = m.Flags
-	if e.flags == nil {
-		e.flags = make(map[Target][]Flag)
-	}
-	// may check if are valid??
 
 	e.state = m.State
 	e.ctx, e.stop = context.WithCancel(context.Background())
@@ -121,6 +117,7 @@ func (s *Session) MarshalJSON() ([]byte, error) {
 		FlagRegex     string
 		SubmitCommand string
 		SubmitTime    time.Duration
+		Flags         flagStoreMarshal
 		Services      []*Service
 	}{}
 
@@ -130,6 +127,7 @@ func (s *Session) MarshalJSON() ([]byte, error) {
 	m.FlagRegex = s.flagRegex.String()
 	m.Targets = s.targets
 	m.Services = s.services
+	m.Flags = flagStoreMarshal{s.flags}
 	return json.Marshal(m)
 }
 
@@ -147,7 +145,6 @@ func (s *Service) MarshalJSON() ([]byte, error) {
 func (e *Exploit) MarshalJSON() ([]byte, error) {
 	m := struct {
 		Name         string
-		Flags        map[Target][]Flag
 		Patched      map[Target]bool `json:",omitempty"`
 		State        ExploitState
 		CommandName  string
@@ -155,9 +152,55 @@ func (e *Exploit) MarshalJSON() ([]byte, error) {
 	}{}
 
 	m.Name = e.name
-	m.Flags = e.flags
 	m.CommandName = e.cmdName
 	m.ExecutionDir = e.executionDir
 	m.State = e.state
 	return json.Marshal(m)
+}
+
+type flagStoreMarshal struct {
+	FlagStore
+}
+
+func (flagStoreMarshal flagStoreMarshal) MarshalJSON() ([]byte, error) {
+	flagStore := flagStoreMarshal.FlagStore
+
+	return json.Marshal(struct {
+		Name  string
+		Flags FlagStore
+	}{Name: flagStore.name(), Flags: flagStore})
+}
+
+func (flagStoreMarshal *flagStoreMarshal) UnmarshalJSON(body []byte) error {
+	mapp := struct {
+		Name  string
+		Flags interface{}
+	}{}
+
+	err := json.Unmarshal(body, &mapp)
+	if err != nil {
+		return fmt.Errorf("decode flag store: %w", err)
+	}
+	if mapp.Name == "" {
+		return fmt.Errorf("no Name found")
+	}
+
+	flagStore, ok := registeredFlagStores[mapp.Name]
+	if !ok {
+		return fmt.Errorf("no registered Name")
+	}
+
+	content, err := json.Marshal(mapp.Flags)
+	if err != nil {
+		return fmt.Errorf("Cannot re encode flags: %w", err)
+	}
+
+	flag := flagStore()
+	err = flag.UnmarshalJSON(content)
+	if err != nil {
+		return err
+	}
+
+	flagStoreMarshal.FlagStore = flag
+	return nil
 }

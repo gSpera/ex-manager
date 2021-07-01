@@ -130,7 +130,6 @@ func handleApiExploitStatus(s *Server, rw http.ResponseWriter, r *http.Request) 
 	type targetStruct struct {
 		Name  string
 		Flags []ex.Flag
-		State ex.ExploitState
 		Fixed bool
 	}
 
@@ -139,16 +138,26 @@ func handleApiExploitStatus(s *Server, rw http.ResponseWriter, r *http.Request) 
 		State   ex.ExploitState
 	}{}
 
-	m.Targets = []targetStruct{}
-	m.State = exploit.CurrentStateString()
-
-	for target, flags := range exploit.Flags() {
-		t := targetStruct{}
-		t.Name = target
-		t.Flags = flags
-		t.Fixed = true
-		m.Targets = append(m.Targets, t)
+	targets := s.Session.ListTargets()
+	m.Targets = make([]targetStruct, len(targets))
+	flags, err := s.Session.FlagsByExploitName(serviceName, exploitName)
+	if err != nil {
+		s.log.Errorln("Cannot retrieve flags")
+		flags = []ex.Flag{}
 	}
+	for i := range m.Targets {
+		m.Targets[i].Name = targets[i]
+		m.Targets[i].Fixed = true
+
+		m.Targets[i].Flags = []ex.Flag{}
+		for _, f := range flags {
+			if f.From == targets[i] {
+				m.Targets[i].Flags = append(m.Targets[i].Flags, f)
+			}
+		}
+	}
+
+	m.State = exploit.CurrentStateString()
 
 	json.NewEncoder(rw).Encode(m)
 }
@@ -156,10 +165,15 @@ func handleApiExploitStatus(s *Server, rw http.ResponseWriter, r *http.Request) 
 func handleApiFlags(s *Server, rw http.ResponseWriter, r *http.Request) {
 	// serviceName := r.FormValue("serviceName")
 	// exploitName := r.FormValue("exploitName")
-	list := make(map[string]map[ex.Target][]ex.Flag)
+	list := make(map[string][]ex.Flag)
 	for _, service := range s.Session.ListServices() {
 		for _, e := range service.Exploits() {
-			list[service.Name()+"-"+e.Name()] = e.Flags()
+			flags, err := s.Session.FlagsByExploitName(service.Name(), e.Name())
+			if err != nil {
+				s.log.Errorln("Cannot get flags:", err)
+				continue
+			}
+			list[service.Name()+"-"+e.Name()] = flags
 		}
 	}
 

@@ -1,6 +1,14 @@
 package ex
 
 type (
-	Target = string
-	Flag   = string
+	Target    = string
+	FlagValue = string
 )
+
+type Flag struct {
+	ServiceName string
+	ExploitName string
+	Value       FlagValue
+	From        Target
+	Status      SubmittedFlagStatus
+}

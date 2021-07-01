@@ -44,7 +44,12 @@ func (s *Submitter) Submit() {
 	}
 
 	lo.Println("Sending flags:", s.flagsToSubmit)
-	cmd := exec.Command(s.cmdLine, s.flagsToSubmit...)
+	flagString := make([]FlagValue, len(s.flagsToSubmit))
+	for i := range flagString {
+		flagString[i] = s.flagsToSubmit[i].Value
+	}
+
+	cmd := exec.Command(s.cmdLine, flagString...)
 	cmd.Stdout = lo.Writer()
 	cmd.Stderr = lo.Writer()
 	err := cmd.Run()
