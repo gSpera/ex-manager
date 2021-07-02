@@ -8,7 +8,7 @@ import (
 )
 
 // SubmittedFlagStatus contains the response of the flag
-type SubmittedFlagStatus string
+type SubmittedFlagStatus = string
 
 const (
 	// FlagNotSubmitted is A flag not yet submitted, we now nothing about it's state
@@ -30,6 +30,30 @@ const (
 	// FlaggServiceOffline is a flag that has been submitted when the service was offline
 	FlagServiceOffline = "OFFLINE-SERVICE"
 )
+
+func SubmittedFlagStatusFromString(value string) (SubmittedFlagStatus, bool) {
+	switch value {
+	case FlagNotSubmitted:
+		return FlagNotSubmitted, true
+	case FlagSubmittedSuccesfully:
+		return FlagSubmittedSuccesfully, true
+	case FlagExpired:
+		return FlagExpired, true
+	case FlagInvalid:
+		return FlagInvalid, true
+	case FlagAlredySubmitted:
+		return FlagAlredySubmitted, true
+	case FlagOwn:
+		return FlagOwn, true
+	case FlagNOP:
+		return FlagNOP, true
+	case FlagOffline:
+		return FlagOffline, true
+	case FlagServiceOffline:
+		return FlagServiceOffline, true
+	}
+	return "", false
+}
 
 // FlagRetriveWriter creates a io.Writer, when wrote the content is logged and flags are searched
 func FlagRetriveWriter(l *log.Entry, t Target, e *Exploit) io.Writer {

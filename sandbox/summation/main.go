@@ -17,7 +17,7 @@ func handle(c io.ReadWriteCloser) {
 	log.Println(random1, random2)
 
 	sum := random1 + random2
-	flag := fmt.Sprintf("CCIT{SUM_%d+%d=%d_}", random1, random2, sum)
+	flag := fmt.Sprintf("CCIT{%d_SUM_%d+%d=%d_}", time.Now().Nanosecond(), random1, random2, sum)
 
 	var v int
 	fmt.Fprintln(c, random1)

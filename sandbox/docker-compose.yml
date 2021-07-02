@@ -11,4 +11,4 @@ services:
     submitter:
         build: receiver
         ports:
-            - "8085:8082"
+            - "8085:8085"

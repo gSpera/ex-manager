@@ -1,7 +1,13 @@
 package ex
 
 import (
+	"bufio"
+	"errors"
+	"fmt"
+	"io"
 	"os/exec"
+	"regexp"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -17,16 +23,18 @@ type Submitter struct {
 	time               time.Duration
 	log                *log.Entry
 	ticker             *time.Ticker
+	flagRegex          string
 	flagStore          FlagStore
 	limitForEachSubmit int
 }
 
-func NewSubmitter(cmd string, submitEvery time.Duration, log *log.Entry, limit int, flagStore FlagStore) *Submitter {
+func NewSubmitter(cmd string, submitEvery time.Duration, log *log.Entry, limit int, flagRegex string, flagStore FlagStore) *Submitter {
 	s := &Submitter{}
 	s.cmdLine = cmd
 	s.time = submitEvery
 	s.ticker = time.NewTicker(submitEvery)
 	s.limitForEachSubmit = limit
+	s.flagRegex = flagRegex
 	s.flagStore = flagStore
 	s.log = log
 	s.state = Running
@@ -48,8 +56,10 @@ func (s *Submitter) Submit() {
 
 	s.log.Println("Sending flags:", flags)
 
-	cmd := exec.Command(s.cmdLine, flags...)
-	cmd.Stdout = s.log.Writer()
+	cmdArgs := strings.Fields(s.cmdLine)
+	cmdArgs = append(cmdArgs, flags...)
+	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+	cmd.Stdout = SubmitterRetrieverWriter(s.flagRegex, s.log, s.log.Writer(), s.flagStore)
 	cmd.Stderr = s.log.Writer()
 	err = cmd.Run()
 	if err != nil {
@@ -57,7 +67,53 @@ func (s *Submitter) Submit() {
 		return
 	}
 
-	for _, f := range flags {
-		s.flagStore.UpdateState(f, FlagSubmittedSuccesfully)
+	s.log.Println("Done sending flags")
+}
+
+func SubmitterRetrieverWriter(flagRegex string, lo *log.Entry, w io.Writer, flagStore FlagStore) io.Writer {
+	pr, pw := io.Pipe()
+
+	r := bufio.NewReader(pr)
+	re, err := regexp.Compile(fmt.Sprintf("^(%s)\\s([a-zA-Z0-9\\-]+)", flagRegex))
+	if err != nil {
+		lo.Errorln("Cannot compile regex:", err)
 	}
+	go func() {
+		for {
+			line, err := r.ReadString('\n')
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			if err != nil {
+				lo.Errorln("Cannot read line:", err)
+				continue
+			}
+			_, err = w.Write([]byte(line))
+			if err != nil {
+				lo.Errorln("Cannot write line:", err)
+				continue
+			}
+			founds := re.FindStringSubmatch(line)
+			if len(founds) != 3 {
+				lo.Errorln("Invalid line: wrong count:", founds, len(founds))
+				continue
+			}
+			flag := founds[1]
+			state := founds[2]
+			stateValue, ok := SubmittedFlagStatusFromString(state)
+			if !ok {
+				lo.Errorln("Wrong state:", state, "for found flag:", flag)
+				continue
+			}
+			err = flagStore.UpdateState(flag, stateValue)
+			if err != nil {
+				lo.Errorln("Cannot update state, flag:", flag, " updated state:", stateValue, ":", err)
+				continue
+			}
+
+			lo.Println("Submitted flag:", flag, stateValue)
+			lo.Debugln("Out:", line)
+		}
+	}()
+	return pw
 }

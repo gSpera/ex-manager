@@ -54,7 +54,7 @@ func (s *Session) UnmarshalJSON(b []byte) error {
 	}
 
 	s.flags = m.Flags.FlagStore
-	s.submitter = NewSubmitter(m.SubmitCommand, m.SubmitTime*time.Second, s.log.WithField("what", "submitter"), m.SubmitLimit, s.flags)
+	s.submitter = NewSubmitter(m.SubmitCommand, m.SubmitTime*time.Second, s.log.WithField("what", "submitter"), m.SubmitLimit, m.FlagRegex, s.flags)
 
 	return nil
 }

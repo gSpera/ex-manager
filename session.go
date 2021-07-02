@@ -38,7 +38,7 @@ func NewSession(name string, flagRegex string, submitCommand string, submitLimit
 	s.targets = targets
 	s.log = log.New().WithField("session", name)
 	s.services = []*Service{}
-	s.submitter = NewSubmitter(submitCommand, defaultSubmitTime, s.log.WithField("what", "submitter"), submitLimit, flagStore)
+	s.submitter = NewSubmitter(submitCommand, defaultSubmitTime, s.log.WithField("what", "submitter"), submitLimit, flagRegex, flagStore)
 
 	s.flagRegex, err = regexp.Compile(flagRegex)
 	if err != nil {
@@ -147,7 +147,6 @@ func (s *Session) WorkSubmitter(ctxDone <-chan struct{}) {
 		case <-s.submitter.ticker.C:
 			s.submitter.Submit()
 		case <-ctxDone:
-			s.submitter.Submit()
 			return
 		}
 	}

@@ -18,15 +18,14 @@ func handle(c io.ReadWriteCloser) {
 		}
 
 		if rand.Int()%100 > 82 {
-			fmt.Fprintln(c, flag, "EXPIRED")
-			return
+			fmt.Fprintln(c, "EXPIRED")
 		}
-		fmt.Fprintln(c, flag, "DONE")
+		fmt.Fprintln(c, "DONE")
 	}
 }
 
 func main() {
-	l, err := net.Listen("tcp", ":8082")
+	l, err := net.Listen("tcp", ":8085")
 	if err != nil {
 		panic(err)
 	}

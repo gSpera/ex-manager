@@ -33,3 +33,12 @@ will send all the flags to the server.
 
 If you have wrote a custom submitter and you want to share it, feel free
 to open a pull request.
+
+The submitter may list in it's output all the flags that it has submitted,
+the format that it may use is:
+```
+FLAG{1} SUCCESS
+FLAG{OLD} EXPIRED
+```
+Any other line not recognized will be logged as an error,
+use stderr to output information.
