@@ -3,6 +3,7 @@ package ex
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 )
 
 var registeredFlagStores map[string]func() FlagStore = map[string]func() FlagStore{}
@@ -23,6 +24,7 @@ type FlagStore interface {
 	GetByName(serviceName string, exploitName string) ([]Flag, error)
 	UpdateState(flagValue string, flagState SubmittedFlagStatus) error
 	GetValueToSubmit(limit int) ([]string, error)
+	GetFlagsSubmittedDuring(from time.Time, to time.Time) ([]Flag, error)
 
 	name() string
 	json.Marshaler
@@ -81,5 +83,18 @@ func (m *MemoryFlagStore) GetValueToSubmit(limit int) ([]string, error) {
 
 	return res, nil
 }
+
+func (m *MemoryFlagStore) GetFlagsSubmittedDuring(from time.Time, to time.Time) ([]Flag, error) {
+	res := make([]Flag, 0)
+
+	for _, f := range *m {
+		if f.SubmittedAt.After(from) && f.SubmittedAt.Before(to) {
+			res = append(res, f)
+		}
+	}
+
+	return res, nil
+}
+
 func (m *MemoryFlagStore) MarshalJSON() ([]byte, error)    { return json.Marshal((*[]Flag)(m)) }
 func (m *MemoryFlagStore) UnmarshalJSON(body []byte) error { return json.Unmarshal(body, (*[]Flag)(m)) }
