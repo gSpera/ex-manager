@@ -9,6 +9,7 @@ import (
 )
 
 func handle(c io.ReadWriteCloser) {
+	defer c.Close()
 	for {
 		var flag string
 		_, err := fmt.Fscanln(c, &flag)

@@ -10,6 +10,7 @@ import (
 )
 
 func handle(c io.ReadWriteCloser) {
+	defer c.Close()
 	rand.Seed(time.Now().Unix())
 	random1 := rand.Int() % 100
 	random2 := rand.Int() % 100
@@ -37,7 +38,6 @@ func handle(c io.ReadWriteCloser) {
 	}
 
 	fmt.Fprintln(c, flag)
-	c.Close()
 }
 
 func main() {
