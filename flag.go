@@ -3,9 +3,21 @@ package ex
 import (
 	"bufio"
 	"io"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
+
+// Flag contains all the information about a flag
+type Flag struct {
+	ServiceName string
+	ExploitName string
+	Value       FlagValue
+	From        Target
+	Status      SubmittedFlagStatus
+	TakenAt     time.Time
+	SubmittedAt time.Time
+}
 
 // SubmittedFlagStatus contains the response of the flag
 type SubmittedFlagStatus = string

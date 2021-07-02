@@ -52,9 +52,14 @@ func (m *MemoryFlagStore) GetByName(serviceName string, exploitName string) ([]F
 }
 
 func (m *MemoryFlagStore) UpdateState(flag string, state SubmittedFlagStatus) error {
+	timeNow := time.Now()
+
 	for i := range *m {
 		if (*m)[i].Value == flag {
 			(*m)[i].Status = state
+			// Update SubmittedAt time
+			// this would happen only once
+			(*m)[i].SubmittedAt = timeNow
 			return nil
 		}
 	}

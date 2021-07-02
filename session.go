@@ -180,9 +180,18 @@ func (s *Session) randomTarget() string {
 }
 
 func (s *Session) AddFlags(flags ...Flag) error {
+	// Set TakenAt time
+	timeNow := time.Now()
+	for i := range flags {
+		flags[i].TakenAt = timeNow
+	}
+
 	return s.flags.Put(flags...)
 }
 
 func (s *Session) FlagsByExploitName(serviceName string, exploitName string) ([]Flag, error) {
 	return s.flags.GetByName(serviceName, exploitName)
+}
+func (s *Session) GetFlagsSubmittedDuring(from time.Time, to time.Time) ([]Flag, error) {
+	return s.flags.GetFlagsSubmittedDuring(from, to)
 }
