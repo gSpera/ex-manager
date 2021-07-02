@@ -55,7 +55,7 @@ class Service extends React.Component {
         this.setState({ ...this.state, timer });
     }
 
-    componentWillUNmount() {
+    componentWillUnmount() {
         clearInterval(this.state.timer);
     }
 
@@ -287,6 +287,75 @@ class ServiceAddComponent extends React.Component {
         </React.Fragment>;
     }
 }
+
+
+class StackedBarGraph extends React.Component {
+    constructor(props) {
+        super(props);
+        const ref = React.createRef();
+
+        this.state = {
+            flags: { success: [], expired: [] },
+            ref,
+        };
+
+        this.update = this.update.bind(this);
+    }
+
+    componentDidMount() {
+        const timer = setInterval(() => this.update(), 1000);
+        this.setState({
+            ...this.state,
+            timer,
+        });
+    }
+    componentWillUnmount() {
+        clearInterval(this.state.timer)
+    }
+    update() {
+        console.log(this);
+        fetch("/api/submitterStatus")
+            .then(r => r.json())
+            .then(r => {
+                const filter = requiredState => r.map(batch => batch.filter(flag => flag["Status"] == requiredState));
+                const process = requiredState => filter(requiredState).map(batch => batch.length).reverse();
+                this.setState({
+                    ...this.state,
+                    flags: {
+                        success: process("SUCCESS"),
+                        expired: process("EXPIRED"),
+                    },
+                });
+            })
+            .catch(err => console.error(err));
+    }
+
+    render() {
+        if (this.state.ref.current) {
+            new chartXkcd.StackedBar(this.state.ref.current, {
+                title: "Submitted Flags",
+                options: { dataColors: ['hsl(171, 100%, 41%)', 'hsl(348, 100%, 61%)'] },
+                xLabel: "Time (Batch = 10s)",
+                yLabel: "Flags",
+                data: {
+                    labels: ["9", "8", "7", "6", "5", "4", "3", "2", "1", "Now"],
+                    datasets: [
+                        {
+                            label: "Success",
+                            data: this.state.flags.success,
+                        },
+                        {
+                            label: "Expired",
+                            data: this.state.flags.expired,
+                        },
+                    ]
+                }
+            })
+        }
+
+        return <svg ref={this.state.ref}></svg>;
+    }
+}
 const modalRef = React.createRef();
 const serviceRef = React.createRef();
 ReactDOM.render(
@@ -309,3 +378,7 @@ ReactDOM.render(
     <ServiceAddComponent serviceRef={serviceRef} />,
     document.getElementById("add-service"),
 );
+ReactDOM.render(
+    <StackedBarGraph />,
+    document.getElementById("graph-stacked-root"),
+)

@@ -16,6 +16,10 @@
             text-align: center !important;
         }
 
+        #graph-stacked-root {
+            height: 100px;
+        }
+
         #add-service {
             margin-top: 1rem;
         }
@@ -30,6 +34,7 @@
     <script src="https://unpkg.com/react/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.xkcd@1.1/dist/chart.xkcd.min.js" crossorigin="anonymous"></script>
     <script type="text/babel" src="script.js"></script>
 </head>
 
@@ -38,6 +43,9 @@
         <h1 class="title is-1 navbar-brand mg-medium">
         </h1>
     </nav>
+
+    <div id="graph-stacked-root">
+    </div>
 
     <div id="global-modal"></div>
 
