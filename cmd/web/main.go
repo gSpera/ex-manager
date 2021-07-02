@@ -94,6 +94,7 @@ func main() {
 	s.HandleServerFunc("/api/uploadExploit", handleApiUploadExploit)
 	s.HandleServerFunc("/api/serviceStatus", handleApiServiceStatus)
 	s.HandleServerFunc("/api/exploitStatus", handleApiExploitStatus)
+	s.HandleServerFunc("/api/submitterStatus", handleApiSubmitterInfo)
 	s.HandleServerFunc("/api/name", handleApiName)
 
 	log.Infoln("Listening on", httpServer.Addr)

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/gSpera/ex-manager"
 )
@@ -270,4 +271,24 @@ done:
 	if err != nil {
 		s.log.Errorln("Cannot encode json:", err)
 	}
+}
+func handleApiSubmitterInfo(s *Server, rw http.ResponseWriter, r *http.Request) {
+	res := make([][]ex.Flag, 10)
+	timeNow := time.Now()
+	for i := range res {
+		flags, err := s.Session.GetFlagsSubmittedDuring(timeSub(timeNow, 10*time.Second), timeNow)
+		if err != nil {
+			s.log.WithField("API", "handleApiSubmitterInfo").Errorln("Cannot retrieve flags from time:", timeNow)
+			res[i] = []ex.Flag{}
+			continue
+		}
+
+		res[i] = flags
+		timeNow = timeSub(timeNow, 10*time.Second)
+	}
+
+	json.NewEncoder(rw).Encode(res)
+}
+func timeSub(t time.Time, d time.Duration) time.Time {
+	return time.Unix(0, t.UnixNano()-d.Nanoseconds())
 }
