@@ -24,7 +24,7 @@ type SubmittedFlagStatus = string
 
 const (
 	// FlagNotSubmitted is A flag not yet submitted, we now nothing about it's state
-	FlagNotSubmitted SubmittedFlagStatus = "NOT SUBMITTED"
+	FlagNotSubmitted SubmittedFlagStatus = "NOT-SUBMITTED"
 	// FlagSubmittedSuccessfully is a flag that has been submitted correctly
 	FlagSubmittedSuccesfully = "SUCCESS"
 	// FlagExpired is a flag that has expired
@@ -32,7 +32,7 @@ const (
 	// FlagInvalid is an invalid flag
 	FlagInvalid = "INVALID"
 	// FlagAlreadySubmitted is a flag that has alredy been submitted by the submitter
-	FlagAlredySubmitted = "ALREDY-SUBMITTED"
+	FlagAlreadySubmitted = "ALREADY-SUBMITTED"
 	// Flagown is a flag that was obtained by the submitter team
 	FlagOwn = "TEAM-OWN"
 	// FlagNOP is a flag obtained by the NOP team
@@ -53,8 +53,8 @@ func SubmittedFlagStatusFromString(value string) (SubmittedFlagStatus, bool) {
 		return FlagExpired, true
 	case FlagInvalid:
 		return FlagInvalid, true
-	case FlagAlredySubmitted:
-		return FlagAlredySubmitted, true
+	case FlagAlreadySubmitted:
+		return FlagAlreadySubmitted, true
 	case FlagOwn:
 		return FlagOwn, true
 	case FlagNOP:
