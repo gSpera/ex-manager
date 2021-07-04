@@ -304,8 +304,66 @@ class StackedBarGraph extends React.Component {
 
     componentDidMount() {
         const timer = setInterval(() => this.update(), 1000);
+        const graph = new Chart(this.state.ref.current, {
+            title: "Submitted Flags",
+            type: "bar",
+            options: { dataColors: ['hsl(171, 100%, 41%)', 'hsl(348, 100%, 61%)'], scales: { x: { stacked: true }, y: { stacked: true } } },
+            xLabel: "Time (Batch = 10s)",
+            yLabel: "Flags",
+            data: {
+                labels: ["9", "8", "7", "6", "5", "4", "3", "2", "1", "Now"],
+                datasets: [
+                    {
+                        label: "Success",
+                        data: this.state.flags.success,
+                        backgroundColor: ['rgba(75, 192, 192, 0.7)'],
+                    },
+                    {
+                        label: "Expired",
+                        data: this.state.flags.expired,
+                        backgroundColor: ['rgba(255, 159, 64, 0.7)'],
+                    },
+                    {
+                        label: "Invalid",
+                        data: this.state.flags.success,
+                        backgroundColor: ['rgba(255, 159, 64, 1)'],
+                    },
+                    {
+                        label: "Not Submitted",
+                        data: this.state.flags.success,
+                        backgroundColor: ['rgba(201, 203, 207, 0.7)'],
+                    },
+                    {
+                        label: "Already Submitted",
+                        data: this.state.flags.success,
+                        backgroundColor: ['rgba(255, 205, 86, 0.2)'],
+                    },
+                    {
+                        label: "Own",
+                        data: this.state.flags.expired,
+                        backgroundColor: ['rgba(153, 102, 255, 0.2)'],
+                    },
+                    {
+                        label: "Nop",
+                        data: this.state.flags.expired,
+                        backgroundColor: ['rgba(255, 159, 64, 0.7)'],
+                    },
+                    {
+                        label: "Offline",
+                        data: this.state.flags.expired,
+                        backgroundColor: ['rgba(54, 162, 235, 0.2)'],
+                    },
+                    {
+                        label: "Offline Service",
+                        data: this.state.flags.expired,
+                        backgroundColor: ['rgba(255, 159, 64, 0.7)'],
+                    },
+                ]
+            }
+        })
         this.setState({
             ...this.state,
+            graph,
             timer,
         });
     }
@@ -313,17 +371,46 @@ class StackedBarGraph extends React.Component {
         clearInterval(this.state.timer)
     }
     update() {
-        console.log(this);
         fetch("/api/submitterStatus")
             .then(r => r.json())
             .then(r => {
                 const filter = requiredState => r.map(batch => batch.filter(flag => flag["Status"] == requiredState));
                 const process = requiredState => filter(requiredState).map(batch => batch.length).reverse();
+                const flagsSuccess = process("SUCCESS");
+                const flagsExpired = process("EXPIRED");
+                const flagsNotSubmitted = process("NOT-SUBMITTED");
+                const flagsInvalid = process("INVALID");
+                const flagsAlready = process("ALREADY-SUBMITTED");
+                const flagsOwn = process("TEAM-OWN");
+                const flagsNop = process("TEAM-NOP");
+                const flagsOffline = process("OFFLINE-CTF");
+                const flagsServiceOffline = process("OFFLINE-SERVICE");
+
+                let graph = this.state.graph;
+                graph.data.datasets[0].data = flagsSuccess;
+                graph.data.datasets[1].data = flagsExpired;
+                graph.data.datasets[2].data = flagsNotSubmitted;
+                graph.data.datasets[3].data = flagsInvalid;
+                graph.data.datasets[4].data = flagsAlready;
+                graph.data.datasets[5].data = flagsOwn;
+                graph.data.datasets[6].data = flagsNop;
+                graph.data.datasets[7].data = flagsOffline;
+                graph.data.datasets[8].data = flagsServiceOffline;
+                graph.update();
+
                 this.setState({
                     ...this.state,
+                    graph,
                     flags: {
-                        success: process("SUCCESS"),
-                        expired: process("EXPIRED"),
+                        success: flagsSuccess,
+                        expired: flagsExpired,
+                        notSubmitted: flagsNotSubmitted,
+                        invalid: flagsInvalid,
+                        already: flagsAlready,
+                        own: flagsOwn,
+                        nop: flagsNop,
+                        offline: flagsOffline,
+                        serviceOffline: flagsServiceOffline,
                     },
                 });
             })
@@ -331,29 +418,7 @@ class StackedBarGraph extends React.Component {
     }
 
     render() {
-        if (this.state.ref.current) {
-            new chartXkcd.StackedBar(this.state.ref.current, {
-                title: "Submitted Flags",
-                options: { dataColors: ['hsl(171, 100%, 41%)', 'hsl(348, 100%, 61%)'] },
-                xLabel: "Time (Batch = 10s)",
-                yLabel: "Flags",
-                data: {
-                    labels: ["9", "8", "7", "6", "5", "4", "3", "2", "1", "Now"],
-                    datasets: [
-                        {
-                            label: "Success",
-                            data: this.state.flags.success,
-                        },
-                        {
-                            label: "Expired",
-                            data: this.state.flags.expired,
-                        },
-                    ]
-                }
-            })
-        }
-
-        return <svg ref={this.state.ref}></svg>;
+        return <canvas ref={this.state.ref}></canvas>;
     }
 }
 const modalRef = React.createRef();
