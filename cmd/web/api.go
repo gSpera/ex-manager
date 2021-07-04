@@ -287,7 +287,9 @@ func handleApiSubmitterInfo(s *Server, rw http.ResponseWriter, r *http.Request) 
 		timeNow = timeSub(timeNow, 10*time.Second)
 	}
 
-	json.NewEncoder(rw).Encode(res)
+	j := json.NewEncoder(rw)
+	j.SetIndent("", "\t")
+	j.Encode(res)
 }
 func timeSub(t time.Time, d time.Duration) time.Time {
 	return time.Unix(0, t.UnixNano()-d.Nanoseconds())
