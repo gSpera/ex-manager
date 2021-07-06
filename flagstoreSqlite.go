@@ -2,6 +2,7 @@ package ex
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -67,14 +68,14 @@ func (s *SQLiteStore) CreateTables() error {
 		exploit string,
 		fromTarget string,
 		status string,
-		takenAt time,
-		submittedAt time
+		takenAt INTEGER,
+		submittedAt INTEGER
 	);`)
 	return err
 }
 
 func (s *SQLiteStore) InsertRow(f Flag) error {
-	_, err := s.Exec(`INSERT INTO flags VALUES (?, ?, ?, ?, ?, ?, ?)`, f.Value, f.ServiceName, f.ExploitName, f.From, string(f.Status), f.TakenAt, f.SubmittedAt)
+	_, err := s.Exec(`INSERT INTO flags VALUES (?, ?, ?, ?, ?, ?, ?)`, f.Value, f.ServiceName, f.ExploitName, f.From, string(f.Status), f.TakenAt.UnixNano(), f.SubmittedAt.UnixNano())
 	if err != nil {
 		return fmt.Errorf("cannot insert flag, is the value unique??: %w", err)
 	}
@@ -105,7 +106,7 @@ func (s *SQLiteStore) GetByName(serviceName string, exploitName string) ([]Flag,
 
 	for rows.Next() {
 		f := Flag{}
-		err := rows.Scan(&f)
+		err := rows.Scan(&f.Value, &f.ServiceName, &f.ExploitName, &f.From, &f.Status, &timeScan{&f.TakenAt}, &timeScan{&f.SubmittedAt})
 		if err != nil {
 			return flags, fmt.Errorf("cannot scan row: %w", err)
 		}
@@ -117,7 +118,7 @@ func (s *SQLiteStore) GetByName(serviceName string, exploitName string) ([]Flag,
 }
 
 func (s *SQLiteStore) UpdateState(flagValue string, state SubmittedFlagStatus) error {
-	_, err := s.Exec("UPDATE flags SET state=? WHERE value=?", state, flagValue)
+	_, err := s.Exec("UPDATE flags SET status=?, submittedAt=? WHERE value=?", state, time.Now().UnixNano(), flagValue)
 	if err != nil {
 		return fmt.Errorf("cannot update: %w", err)
 	}
@@ -127,7 +128,7 @@ func (s *SQLiteStore) UpdateState(flagValue string, state SubmittedFlagStatus) e
 
 func (s *SQLiteStore) GetValueToSubmit(limit int) ([]string, error) {
 	flags := make([]string, 0)
-	rows, err := s.Query("SELECT value FROM flags WHERE status=NOT-SUBMITTED LIMIT ? ORDER BY takenAt", limit)
+	rows, err := s.Query("SELECT value FROM flags WHERE status=\"NOT-SUBMITTED\" ORDER BY takenAt  LIMIT ?", limit)
 	if err != nil {
 		return flags, fmt.Errorf("cannot query: %w", err)
 	}
@@ -146,14 +147,14 @@ func (s *SQLiteStore) GetValueToSubmit(limit int) ([]string, error) {
 
 func (s *SQLiteStore) GetFlagsSubmittedDuring(from time.Time, to time.Time) ([]Flag, error) {
 	flags := make([]Flag, 0)
-	rows, err := s.Query("SELECT * FROM FLAGS")
+	rows, err := s.Query("SELECT * FROM flags WHERE submittedAt >= ? and submittedAt <= ?", from.UnixNano(), to.UnixNano())
 	if err != nil {
 		return flags, fmt.Errorf("cannot query: %w", err)
 	}
 
 	for rows.Next() {
 		var f Flag
-		err := rows.Scan(&f)
+		err := rows.Scan(&f.Value, &f.ServiceName, &f.ExploitName, &f.From, &f.Status, &timeScan{&f.TakenAt}, &timeScan{&f.SubmittedAt})
 		if err != nil {
 			return flags, fmt.Errorf("cannot scan: %w", err)
 		}
@@ -181,4 +182,23 @@ func (s *SQLiteStore) UnmarshalJSON(data []byte) error {
 
 	defer spew.Dump(s)
 	return s.init(s.url)
+}
+
+type timeScan struct{ *time.Time }
+
+func (t *timeScan) Scan(v interface{}) error {
+	content, ok := v.(int64)
+	if !ok {
+		panic(v)
+	}
+
+	tt := time.Unix(0, int64(content))
+
+	*t.Time = tt
+
+	return nil
+}
+
+func (t *timeScan) Value() (driver.Value, error) {
+	return t.Format(time.RFC3339Nano), nil
 }
