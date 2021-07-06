@@ -307,7 +307,7 @@ class StackedBarGraph extends React.Component {
         const graph = new Chart(this.state.ref.current, {
             title: "Submitted Flags",
             type: "bar",
-            options: { dataColors: ['hsl(171, 100%, 41%)', 'hsl(348, 100%, 61%)'], scales: { x: { stacked: true }, y: { stacked: true } } },
+            options: { dataColors: ['hsl(171, 100%, 41%)', 'hsl(348, 100%, 61%)'], scales: { x: { stacked: true }, y: { stacked: true } }, responsive: false },
             xLabel: "Time (Batch = 10s)",
             yLabel: "Flags",
             data: {
@@ -443,7 +443,8 @@ ReactDOM.render(
     <ServiceAddComponent serviceRef={serviceRef} />,
     document.getElementById("add-service"),
 );
+
 ReactDOM.render(
     <StackedBarGraph />,
     document.getElementById("graph-stacked-root"),
-)
+);

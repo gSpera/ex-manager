@@ -143,7 +143,7 @@ func handleApiExploitStatus(s *Server, rw http.ResponseWriter, r *http.Request) 
 	m.Targets = make([]targetStruct, len(targets))
 	flags, err := s.Session.FlagsByExploitName(serviceName, exploitName)
 	if err != nil {
-		s.log.Errorln("Cannot retrieve flags")
+		s.log.Errorln("Cannot retrieve flags:", err)
 		flags = []ex.Flag{}
 	}
 	for i := range m.Targets {
