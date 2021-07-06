@@ -8,7 +8,7 @@ import (
 
 var registeredFlagStores map[string]func() FlagStore = map[string]func() FlagStore{}
 
-// REgisterFlagStore registers a new FlagStore
+// RegisterFlagStore registers a new FlagStore
 func RegisterFlagStore(fl func() FlagStore) {
 	registeredFlagStores[fl().name()] = fl
 }
