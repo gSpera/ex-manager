@@ -278,7 +278,7 @@ func handleApiSubmitterInfo(s *Server, rw http.ResponseWriter, r *http.Request) 
 	for i := range res {
 		flags, err := s.Session.GetFlagsSubmittedDuring(timeSub(timeNow, 10*time.Second), timeNow)
 		if err != nil {
-			s.log.WithField("API", "handleApiSubmitterInfo").Errorln("Cannot retrieve flags from time:", timeNow)
+			s.log.WithField("API", "handleApiSubmitterInfo").Errorln("Cannot retrieve flags from time:", timeNow, err)
 			res[i] = []ex.Flag{}
 			continue
 		}

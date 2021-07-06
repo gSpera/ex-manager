@@ -30,6 +30,10 @@ func main() {
 	s.Config.Address = ":8080"
 
 	config, err := ioutil.ReadFile("exm.json")
+	if err != nil {
+		log.Fatalln("Cannot read exm.json:", err)
+		os.Exit(1)
+	}
 	err = json.Unmarshal(config, &s)
 	if err != nil {
 		log.Fatalln("Cannot decode config:", err)
