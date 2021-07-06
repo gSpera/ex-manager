@@ -34,7 +34,7 @@ type SQLiteStore struct {
 // json.Marshaler
 // json.Unmarshaler
 func NewSqliteStore(file string) (*SQLiteStore, error) {
-	s := SQLiteStore{}
+	s := &SQLiteStore{}
 	err := s.init(file)
 	return s, err
 }
