@@ -306,7 +306,7 @@ class StackedBarGraph extends React.Component {
         const timer = setInterval(() => this.update(), 1000);
         const graph = new Chart(this.state.ref.current, {
             title: "Submitted Flags",
-            type: "bar",
+            type: "line",
             options: { dataColors: ['hsl(171, 100%, 41%)', 'hsl(348, 100%, 61%)'], scales: { x: { stacked: true }, y: { stacked: true } }, responsive: false },
             xLabel: "Time (Batch = 10s)",
             yLabel: "Flags",
@@ -421,6 +421,82 @@ class StackedBarGraph extends React.Component {
         return <canvas ref={this.state.ref}></canvas>;
     }
 }
+
+function workerStringToInfo(status) {
+    switch (status) {
+        case "WorkerWaiting":
+            return {
+                string: "Waiting...",
+                class: "worker-warning",
+            }
+        case "WorkerSearching":
+            return {
+                string: "Searching an exploit...",
+                class: "worker-warning",
+            }
+        case "WorkerRunning":
+            return {
+                string: "Running an exploit",
+                class: "worker-good",
+            }
+        case "WorkerExit":
+            return {
+                string: "Exit",
+                class: "worker-alert",
+            }
+    }
+}
+class WorkerStatus extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            workers: [],
+        }
+
+        this.update = this.update.bind(this);
+
+        this.update();
+    }
+
+    componentDidMount() {
+        const timer = setInterval(() => this.update(), 300);
+        this.setState({
+            ...this.state,
+            timer,
+        })
+    }
+
+    componentdidUnmount() {
+        clearInterval(this.state.timer);
+    }
+
+    update() {
+        fetch("/api/workersStatus")
+            .then(r => r.json())
+            .then(r => {
+                this.setState({
+                    ...this.state,
+                    workers: r,
+                });
+            })
+            .catch(err => console.error(err));
+    }
+
+    render() {
+        return <React.Fragment>
+            <h2 className="title is-2">Workers</h2>
+            <ul>
+                {
+                    this.state.workers.map(w => {
+                        const state = workerStringToInfo(w.State);
+                        return <li className={state.class} key={w.ID}><span class="worker-id">{w.ID}:</span> {state.string}</li>
+                    })
+                }
+            </ul>
+        </React.Fragment >;
+    }
+}
+
 const modalRef = React.createRef();
 const serviceRef = React.createRef();
 ReactDOM.render(
@@ -448,3 +524,8 @@ ReactDOM.render(
     <StackedBarGraph />,
     document.getElementById("graph-stacked-root"),
 );
+
+ReactDOM.render(
+    <WorkerStatus />,
+    document.getElementById("workers-root"),
+)

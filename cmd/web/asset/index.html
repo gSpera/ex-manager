@@ -33,6 +33,30 @@
             display: block;
             margin: 1rem;
         }
+
+        #workers-root ul li {
+            list-style: disc;
+            margin-left: 1rem;
+        }
+
+        .worker-warning::marker {
+            color: orange;
+        }
+
+        .worker-alert::marker {
+            color: red;
+        }
+
+        .worker-good::marker {
+            color: green;
+        }
+
+        .worker-id {
+            font-family: monospace;
+            display: inline-grid;
+            justify-content: end;
+            width: 2em;
+        }
     </style>
     <link rel="stylesheet" href="/static/css.css">
 
@@ -52,9 +76,12 @@
     <div id="graph-stacked-root">
     </div>
 
+
     <div id="global-modal"></div>
 
     <main class="section has-background-info-light">
+        <div id="workers-root" class="box"></div>
+
         <div id="services-root"></div>
 
         <div id="add-service" class="section box">
