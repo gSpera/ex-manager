@@ -294,3 +294,30 @@ func handleApiSubmitterInfo(s *Server, rw http.ResponseWriter, r *http.Request) 
 func timeSub(t time.Time, d time.Duration) time.Time {
 	return time.Unix(0, t.UnixNano()-d.Nanoseconds())
 }
+
+func handleApiWorkersStatus(s *Server, rw http.ResponseWriter, r *http.Request) {
+	type worker struct {
+		ID    int64
+		State string
+		From  time.Time
+	}
+
+	ws := s.Session.WorkersInfo()
+	values := make([]worker, len(ws))
+
+	for i, w := range ws {
+		state, from := w.State()
+		values[i] = worker{
+			w.ID(),
+			state.String(),
+			from,
+		}
+	}
+
+	jsonEncoder := json.NewEncoder(rw)
+	jsonEncoder.SetIndent("", "\t")
+	err := jsonEncoder.Encode(values)
+	if err != nil {
+		s.log.Printf("Cannot encode json: %w\n", err)
+	}
+}
