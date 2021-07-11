@@ -7,27 +7,40 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"regexp"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
-// Session is the main struct of ex-manager
-// a session contains multiple services with their exploits
+// Session is one of the main structs of ex-manager, it manages
+// the Services, the Submitter, the FlagStore and the Workers
+//
+// A new Session can be built by unmarshaling or using NewSession.
 type Session struct {
-	name      string
-	log       *log.Entry
-	ctx       context.Context
-	sleepTime time.Duration
-	cancel    context.CancelFunc
-	targets   []string
-	flagRegex *regexp.Regexp
-	services  []*Service
-	submitter *Submitter
+	name          string
+	log           *log.Entry
+	ctx           context.Context
+	sleepTime     time.Duration
+	cancel        context.CancelFunc
+	flagRegex     *regexp.Regexp
+	services      []*Service
+	servicesMutex sync.Mutex
+	submitter     *Submitter
+
+	targets      []string
+	targetsMutex sync.Mutex
+
+	// Workers informations
+	workers      []*WorkerInfo
+	workersId    int64
+	workersMutex sync.Mutex
 
 	flags FlagStore
 }
 
+// NewSession creates a new Session and it's internal submitter
 func NewSession(name string, flagRegex string, submitCommand string, submitLimit int, flagStore FlagStore, targets ...Target) (*Session, error) {
 	s := &Session{}
 	var err error
@@ -64,11 +77,11 @@ func NewSessionFromFile(fl string) (*Session, error) {
 	return s, nil
 }
 
-func (s Session) Name() string {
+func (s *Session) Name() string {
 	return s.name
 }
 
-func (s Session) ListTargets() []string {
+func (s *Session) ListTargets() []string {
 	return s.targets
 }
 
@@ -76,22 +89,38 @@ func (s *Session) ListServices() []*Service {
 	return s.services
 }
 
+func (s *Session) newWorkerId() int64 {
+	return atomic.AddInt64(&s.workersId, 1)
+}
+
+// getWorkerKit creates necessary resources for a new worker
+func (s *Session) getWorkerKit() (int64, context.Context) {
+	// maybe use a context??
+	// ctx, close := context.WithCancel(s.ctx)
+	id := s.newWorkerId()
+
+	return id, s.ctx
+}
+
+func (s *Session) addWorker(w *WorkerInfo) {
+	s.workersMutex.Lock()
+	defer s.workersMutex.Unlock()
+
+	s.workers = append(s.workers, w)
+}
+
+func (s *Session) WorkersInfo() []*WorkerInfo {
+	s.workersMutex.Lock()
+	defer s.workersMutex.Unlock()
+
+	return s.workers
+}
+
+// Work adds current gorutine to the working pool,
+// this functions return when the gorutine stops working
 func (s *Session) Work() error {
-	for {
-		if err := s.ctx.Err(); err != nil {
-			return err
-		}
-
-		e, ok := s.getExploit()
-		if !ok {
-			s.log.Warnln("Cannot find exploit")
-			time.Sleep(1 * time.Second)
-			continue
-		}
-
-		e.Execute()
-		time.Sleep(s.sleepTime)
-	}
+	w := NewWorkerForSession(s)
+	return w.Work()
 }
 
 func (s *Session) WorkAdd(n int) {
@@ -103,10 +132,16 @@ func (s *Session) WorkAdd(n int) {
 }
 
 func (s *Session) AddTarget(t Target) {
+	s.targetsMutex.Lock()
+	defer s.targetsMutex.Unlock()
+
 	s.targets = append(s.targets, t)
 }
 
 func (s *Session) AddService(service *Service) {
+	s.servicesMutex.Lock()
+	defer s.servicesMutex.Unlock()
+
 	if s.GetServiceByName(service.name) != nil {
 		s.log.Warnln("Cannot add service:", service.name, "another service with same name")
 		return
@@ -188,6 +223,8 @@ func (s *Session) AddFlags(flags ...Flag) error {
 
 	return s.flags.Put(flags...)
 }
+
+// Wrappers for FlagStore
 
 func (s *Session) FlagsByExploitName(serviceName string, exploitName string) ([]Flag, error) {
 	return s.flags.GetByName(serviceName, exploitName)
