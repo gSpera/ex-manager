@@ -17,7 +17,6 @@ const (
 	WorkerRunning
 	WorkerSleeping
 	WorkerExit
-	WorkerDebug
 )
 
 func (w WorkerState) String() string {
@@ -50,6 +49,8 @@ type WorkerInfo struct {
 	from      time.Time // time of last transition of state
 	log       *log.Entry
 	sleepTime time.Duration
+
+	running ServiceExploitName
 }
 
 func NewWorkerForSession(s *Session) *WorkerInfo {
@@ -73,8 +74,14 @@ func (w *WorkerInfo) ID() int64 {
 	return w.id
 }
 
-func (w *WorkerInfo) State() (WorkerState, time.Time) {
-	return w.state, w.from
+// State returns specific informations about the Worker, the satater in which it is, the time from which the Worker is in that state
+// and custom informations defined by the state.
+// If the state is not WorkerRunning runningExploit should not be considered valid
+func (w *WorkerInfo) State() (state WorkerState, from time.Time, runningExploit ServiceExploitName) {
+	state = w.state
+	from = w.from
+	runningExploit = w.running
+	return
 }
 
 // SetState can be used to signal the worker to enter a specific event,
@@ -135,10 +142,17 @@ func (w *WorkerInfo) Work() error {
 			time.Sleep(1 * time.Second)
 			continue
 		}
-		w.log.Println("Found")
+		w.log.WithField(
+			"exploit-name", e.Name(),
+		).Println("Running exploit:", e.Name())
 
+		w.running = ServiceExploitName{
+			ServiceName: e.service.Name(),
+			ExploitName: e.Name(),
+		}
 		w.setState(WorkerRunning)
 		e.Execute()
+		w.log.Println("Done executing exploit")
 		w.setState(WorkerSleeping)
 		time.Sleep(w.sleepTime)
 	}
