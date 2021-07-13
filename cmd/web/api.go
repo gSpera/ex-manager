@@ -300,17 +300,24 @@ func handleApiWorkersStatus(s *Server, rw http.ResponseWriter, r *http.Request) 
 		ID    int64
 		State string
 		From  time.Time
+
+		// State == WorkerRunning
+		ex.ServiceExploitName
 	}
 
 	ws := s.Session.WorkersInfo()
 	values := make([]worker, len(ws))
 
 	for i, w := range ws {
-		state, from := w.State()
+		state, from, runningExploit := w.State()
 		values[i] = worker{
-			w.ID(),
-			state.String(),
-			from,
+			ID:    w.ID(),
+			State: state.String(),
+			From:  from,
+		}
+
+		if state == ex.WorkerRunning {
+			values[i].ServiceExploitName = runningExploit
 		}
 	}
 

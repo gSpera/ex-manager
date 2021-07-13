@@ -422,7 +422,8 @@ class StackedBarGraph extends React.Component {
     }
 }
 
-function workerStringToInfo(status) {
+function workerStringToInfo(worker) {
+    const status = worker.State;
     switch (status) {
         case "WorkerWaiting":
             return {
@@ -436,7 +437,7 @@ function workerStringToInfo(status) {
             }
         case "WorkerRunning":
             return {
-                string: "Running an exploit",
+                string: `Running ${worker.ServiceName}/${worker.ExploitName}`,
                 class: "worker-good",
             }
         case "WorkerExit":
@@ -485,14 +486,14 @@ class WorkerStatus extends React.Component {
     render() {
         return <React.Fragment>
             <h2 className="title is-2">Workers</h2>
-            <ul>
+            <div>
                 {
                     this.state.workers.map(w => {
-                        const state = workerStringToInfo(w.State);
-                        return <li className={state.class} key={w.ID}><span class="worker-id">{w.ID}:</span> {state.string}</li>
+                        const state = workerStringToInfo(w);
+                        return <div className={"worker " + state.class} key={w.ID}><span className="worker-id">{w.ID}:</span> {state.string}</div>
                     })
                 }
-            </ul>
+            </div>
         </React.Fragment >;
     }
 }

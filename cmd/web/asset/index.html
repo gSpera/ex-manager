@@ -39,15 +39,25 @@
             margin-left: 1rem;
         }
 
-        .worker-warning::marker {
+        .worker {
+            display: inline-block;
+            width: 33.3%;
+            vertical-align: middle;
+        }
+
+        .worker::before {
+            content: "\25CF";
+        }
+
+        .worker-warning::before {
             color: orange;
         }
 
-        .worker-alert::marker {
+        .worker-alert::before {
             color: red;
         }
 
-        .worker-good::marker {
+        .worker-good::before {
             color: green;
         }
 
