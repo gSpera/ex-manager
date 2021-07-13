@@ -1,14 +1,8 @@
 #!/bin/sh
 
-target=""
-while getopts "t:" flag; do
-    case $flag in
-        t) target=$OPTARG;;
-        *) echo "Unkown $flag"
-    esac
-done
+target=$1
 
-echo $target
+echo "Target: $target"
 F=$(base64 /dev/urandom | head -c5)
 echo "Lorem ipsum CCIT{$F}."
 

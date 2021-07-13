@@ -151,7 +151,7 @@ func (w *WorkerInfo) Work() error {
 			ExploitName: e.Name(),
 		}
 		w.setState(WorkerRunning)
-		e.Execute()
+		e.Execute(w.log)
 		w.log.Println("Done executing exploit")
 		w.setState(WorkerSleeping)
 		time.Sleep(w.sleepTime)
