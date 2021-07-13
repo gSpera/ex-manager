@@ -37,7 +37,7 @@ func NewSubmitter(cmd string, submitEvery time.Duration, log *log.Entry, limit i
 	s.flagRegex = flagRegex
 	s.flagStore = flagStore
 	s.log = log
-	s.state = Running
+	s.state = Runnable
 	return s
 }
 

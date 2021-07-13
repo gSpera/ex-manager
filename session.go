@@ -200,7 +200,7 @@ func (s *Session) getExploit() (*Exploit, bool) {
 	}
 	n = rand.Intn(len(es.exploits))
 
-	if es.exploits[n].state != Running {
+	if es.exploits[n].state != Runnable {
 		return nil, false
 	}
 
