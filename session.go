@@ -166,6 +166,9 @@ func (s *Session) Stop() {
 }
 
 func (s *Session) AllExploits() []*Exploit {
+	s.servicesMutex.Lock()
+	defer s.servicesMutex.Unlock()
+
 	exs := make([]*Exploit, 0, len(s.services)*2)
 	for _, service := range s.ListServices() {
 		for _, exploit := range service.exploits {
