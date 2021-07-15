@@ -139,9 +139,9 @@ class Exploit extends React.Component {
             <div className="status-line level">
                 <span className="name title is-4">{this.props.name}</span>
                 {
-                    this.state.running == "Running"
+                    this.state.running == "Runnable"
                         ? <button onClick={() => this.changeState("Paused")} className="button is-success is-outlined">Running</button>
-                        : <button onClick={() => this.changeState("Running")} className="button is-danger">Paused</button>
+                        : <button onClick={() => this.changeState("Runnable")} className="button is-danger">Paused</button>
                 }
             </div>
             <details>
