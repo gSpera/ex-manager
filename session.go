@@ -195,19 +195,25 @@ func (s *Session) getExploit() (*Exploit, bool) {
 		return nil, false
 	}
 
-	n := rand.Intn(len(s.services))
-	es := s.services[n]
-	if len(es.exploits) == 0 {
-		// a loop??
-		return nil, false
-	}
-	n = rand.Intn(len(es.exploits))
+	exs := s.AllExploits()
+	exsRunnable := make([]*Exploit, 0, len(exs))
+	for _, ex := range exs {
+		if ex.state != Runnable {
+			continue
+		}
 
-	if es.exploits[n].state != Runnable {
-		return nil, false
+		exsRunnable = append(exsRunnable, ex)
 	}
 
-	return es.exploits[n], true
+	if len(exsRunnable) == 0 {
+		// no runnable exploit
+		return nil, false
+	}
+
+	n := rand.Intn(len(exsRunnable))
+	es := exsRunnable[n]
+
+	return es, true
 }
 
 func (s *Session) randomTarget() string {
