@@ -1,3 +1,6 @@
 #!/bin/sh
 
 echo $* >> flags
+for flag in $*; do
+    echo $flag "SUCCESS"
+done
