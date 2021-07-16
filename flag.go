@@ -17,6 +17,7 @@ type Flag struct {
 	Status      SubmittedFlagStatus
 	TakenAt     time.Time
 	SubmittedAt time.Time
+	ExecutionID ExecutionID
 }
 
 // SubmittedFlagStatus contains the response of the flag
@@ -68,7 +69,7 @@ func SubmittedFlagStatusFromString(value string) (SubmittedFlagStatus, bool) {
 }
 
 // FlagRetriveWriter creates a io.Writer, when wrote the content is logged and flags are searched
-func FlagRetriveWriter(l *log.Entry, t Target, e *Exploit) io.Writer {
+func FlagRetriveWriter(l *log.Entry, t Target, e *Exploit, execId ExecutionID) io.Writer {
 	pr, pw := io.Pipe()
 
 	go func() {
@@ -85,7 +86,7 @@ func FlagRetriveWriter(l *log.Entry, t Target, e *Exploit) io.Writer {
 			}
 
 			f := e.service.session.SearchFlagsInText(string(line))
-			e.foundFlag(t, f...)
+			e.foundFlag(t, execId, f...)
 
 			l.Println("Program Stdout:", string(line))
 			if len(f) > 0 {

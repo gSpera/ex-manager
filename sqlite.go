@@ -69,13 +69,24 @@ func (s *SQLiteStore) CreateTables() error {
 		fromTarget string,
 		status string,
 		takenAt INTEGER,
-		submittedAt INTEGER
+		submittedAt INTEGER,
+		executionId INTEGER
 	);`)
 	return err
 }
 
 func (s *SQLiteStore) InsertRow(f Flag) error {
-	_, err := s.Exec(`INSERT INTO flags VALUES (?, ?, ?, ?, ?, ?, ?)`, f.Value, f.ServiceName, f.ExploitName, f.From, string(f.Status), f.TakenAt.UnixNano(), f.SubmittedAt.UnixNano())
+	_, err := s.Exec(`INSERT INTO flags VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		f.Value,
+		f.ServiceName,
+		f.ExploitName,
+		f.From,
+		string(f.Status),
+		f.TakenAt.UnixNano(),
+		f.SubmittedAt.UnixNano(),
+		f.ExecutionID,
+	)
+
 	if err != nil {
 		return fmt.Errorf("cannot insert flag, is the value unique??: %w", err)
 	}
@@ -106,7 +117,7 @@ func (s *SQLiteStore) GetByName(serviceName string, exploitName string) ([]Flag,
 
 	for rows.Next() {
 		f := Flag{}
-		err := rows.Scan(&f.Value, &f.ServiceName, &f.ExploitName, &f.From, &f.Status, &timeScan{&f.TakenAt}, &timeScan{&f.SubmittedAt})
+		err := rows.Scan(&f.Value, &f.ServiceName, &f.ExploitName, &f.From, &f.Status, &timeScan{&f.TakenAt}, &timeScan{&f.SubmittedAt}, &f.ExecutionID)
 		if err != nil {
 			return flags, fmt.Errorf("cannot scan row: %w", err)
 		}
@@ -154,7 +165,7 @@ func (s *SQLiteStore) GetFlagsSubmittedDuring(from time.Time, to time.Time) ([]F
 
 	for rows.Next() {
 		var f Flag
-		err := rows.Scan(&f.Value, &f.ServiceName, &f.ExploitName, &f.From, &f.Status, &timeScan{&f.TakenAt}, &timeScan{&f.SubmittedAt})
+		err := rows.Scan(&f.Value, &f.ServiceName, &f.ExploitName, &f.From, &f.Status, &timeScan{&f.TakenAt}, &timeScan{&f.SubmittedAt}, &f.ExecutionID)
 		if err != nil {
 			return flags, fmt.Errorf("cannot scan: %w", err)
 		}
