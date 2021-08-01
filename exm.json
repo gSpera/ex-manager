@@ -3,10 +3,20 @@
 		"Name": "Test",
 		"Targets": [
 			":8081",
-			":8082"
+			":8082",
+			"1",
+			"2",
+			"3",
+			"4",
+			"5",
+			"6",
+			"7",
+			"8",
+			"9",
+			"10"
 		],
 		"FlagRegex": "CCIT\\{.*\\}",
-		"SubmitCommand": "go run sandbox/receiver/submitter.go",
+		"SubmitCommand": "./submit",
 		"SubmitTime": 10,
 		"Flags": {
 			"Name": "SQLITE",
@@ -59,7 +69,11 @@
 					}
 				]
 			}
-		]
+		],
+		"ExecutionDumper": {
+			"Name": "SQLITE",
+			"Dumper": "exm.db"
+		}
 	},
 	"Config": {
 		"Address": ":8080"

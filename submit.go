@@ -45,7 +45,7 @@ func NewSubmitter(cmd string, submitEvery time.Duration, log *log.Entry, limit i
 func (s *Submitter) Submit() {
 	flags, err := s.flagStore.GetValueToSubmit(s.limitForEachSubmit)
 	if err != nil {
-		s.log.Errorln("Cannot retrieve flags:", err)
+		s.log.Errorln("Cannot retrieve flags to submit:", err)
 		return
 	}
 	// support partial sending??

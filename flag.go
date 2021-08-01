@@ -1,11 +1,7 @@
 package ex
 
 import (
-	"bufio"
-	"io"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // Flag contains all the information about a flag
@@ -66,36 +62,6 @@ func SubmittedFlagStatusFromString(value string) (SubmittedFlagStatus, bool) {
 		return FlagServiceOffline, true
 	}
 	return "", false
-}
-
-// FlagRetriveWriter creates a io.Writer, when wrote the content is logged and flags are searched
-func FlagRetriveWriter(l *log.Entry, t Target, e *Exploit, execId ExecutionID) io.Writer {
-	pr, pw := io.Pipe()
-
-	go func() {
-		r := bufio.NewReader(pr)
-		for {
-			line, err := r.ReadBytes('\n')
-			if err == io.EOF {
-				return
-			}
-
-			if err != nil {
-				log.Error("Cannot read:", err)
-				return
-			}
-
-			f := e.service.session.SearchFlagsInText(string(line))
-			e.foundFlag(t, execId, f...)
-
-			l.Println("Program Stdout:", string(line))
-			if len(f) > 0 {
-				l.Println("Found Flags: ", f)
-			}
-		}
-	}()
-
-	return pw
 }
 
 func (s *Session) SearchFlagsInText(str string) []string {
