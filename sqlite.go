@@ -110,9 +110,6 @@ func (s *SQLiteStore) Put(flags ...Flag) error {
 }
 
 func (s *SQLiteStore) GetByName(serviceName string, exploitName string) ([]Flag, error) {
-	if s.DB == nil {
-		panic(s)
-	}
 	flags := make([]Flag, 0)
 	rows, err := s.Query("SELECT * FROM flags WHERE service=? AND exploit=?", serviceName, exploitName)
 	if err != nil {
@@ -203,6 +200,28 @@ func (s *SQLiteStore) Dump(service string, exploit string, execID ExecutionID, s
 		service, exploit, execID, string(stream), string(body), time.Now().UnixNano())
 
 	return err
+}
+
+func (s *SQLiteStore) LogsFromExecID(execID ExecutionID) ([]ExecutionLog, error) {
+	rows, err := s.Query(`SELECT * FROM execlogs WHERE execID = ?`, execID)
+
+	if err != nil {
+		return []ExecutionLog{}, fmt.Errorf("Cannot query logs for execution: %q: %w", execID, err)
+	}
+
+	logs := make([]ExecutionLog, 0, 2)
+
+	for rows.Next() {
+		var l ExecutionLog
+		err := rows.Scan(&l.ServiceName, &l.ExploitName, &l.ExecutionID, &l.Stream, &l.Content, &timeScan{&l.When})
+		if err != nil {
+			return []ExecutionLog{}, fmt.Errorf("Cannot scan row: %w", err)
+		}
+
+		logs = append(logs, l)
+	}
+
+	return logs, nil
 }
 
 type timeScan struct{ *time.Time }

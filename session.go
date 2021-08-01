@@ -243,3 +243,9 @@ func (s *Session) FlagsByExploitName(serviceName string, exploitName string) ([]
 func (s *Session) GetFlagsSubmittedDuring(from time.Time, to time.Time) ([]Flag, error) {
 	return s.flags.GetFlagsSubmittedDuring(from, to)
 }
+
+// Wrappers for ExecutionDumperStore
+
+func (s *Session) LogForExeuctionId(execID ExecutionID) ([]ExecutionLog, error) {
+	return s.dumper.LogsFromExecID(execID)
+}

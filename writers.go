@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"io"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -15,6 +16,15 @@ const (
 	StreamStdout = "STDOUT"
 	StreamStderr = "STDERR"
 )
+
+type ExecutionLog struct {
+	ServiceName string
+	ExploitName string
+	ExecutionID ExecutionID
+	Stream      OutputStream
+	Content     string
+	When        time.Time
+}
 
 var registeredExecutionDumper map[string]func() ExecutionDumper = map[string]func() ExecutionDumper{}
 
@@ -32,6 +42,7 @@ func init() {
 // or even a persisten one like a file or a database
 type ExecutionDumper interface {
 	Dump(serviceName string, exploitName string, execID ExecutionID, stream OutputStream, content []byte) error
+	LogsFromExecID(ExecutionID) ([]ExecutionLog, error)
 
 	json.Marshaler
 	json.Unmarshaler
