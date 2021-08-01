@@ -37,11 +37,12 @@ type Session struct {
 	workersId    int64
 	workersMutex sync.Mutex
 
-	flags FlagStore
+	flags  FlagStore
+	dumper ExecutionDumper
 }
 
 // NewSession creates a new Session and it's internal submitter
-func NewSession(name string, flagRegex string, submitCommand string, submitLimit int, flagStore FlagStore, targets ...Target) (*Session, error) {
+func NewSession(name string, flagRegex string, submitCommand string, submitLimit int, flagStore FlagStore, dumper ExecutionDumper, targets ...Target) (*Session, error) {
 	s := &Session{}
 	var err error
 
@@ -59,6 +60,7 @@ func NewSession(name string, flagRegex string, submitCommand string, submitLimit
 	}
 
 	s.flags = flagStore
+	s.dumper = dumper
 
 	return s, nil
 }

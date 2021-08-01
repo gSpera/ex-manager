@@ -12,15 +12,16 @@ import (
 
 func (s *Session) UnmarshalJSON(b []byte) error {
 	m := struct {
-		Name          string
-		SleepTime     time.Duration
-		Targets       []Target
-		FlagRegex     string
-		SubmitCommand string
-		SubmitTime    time.Duration
-		SubmitLimit   int
-		Flags         flagStoreMarshal
-		Services      []*Service
+		Name            string
+		SleepTime       time.Duration
+		Targets         []Target
+		FlagRegex       string
+		SubmitCommand   string
+		SubmitTime      time.Duration
+		SubmitLimit     int
+		Flags           flagStoreMarshal
+		Services        []*Service
+		ExecutionDumper executionDumperMarshal
 	}{}
 
 	err := json.Unmarshal(b, &m)
@@ -54,6 +55,7 @@ func (s *Session) UnmarshalJSON(b []byte) error {
 	}
 
 	s.flags = m.Flags.FlagStore
+	s.dumper = m.ExecutionDumper.dumper
 	s.submitter = NewSubmitter(m.SubmitCommand, m.SubmitTime*time.Second, s.log.WithField("what", "submitter"), m.SubmitLimit, m.FlagRegex, s.flags)
 
 	return nil
@@ -114,14 +116,15 @@ func (e *Exploit) UnmarshalJSON(b []byte) error {
 
 func (s *Session) MarshalJSON() ([]byte, error) {
 	m := struct {
-		Name          string
-		Targets       []Target
-		FlagRegex     string
-		SubmitCommand string
-		SubmitTime    time.Duration
-		Flags         flagStoreMarshal
-		SubmitLimit   int
-		Services      []*Service
+		Name            string
+		Targets         []Target
+		FlagRegex       string
+		SubmitCommand   string
+		SubmitTime      time.Duration
+		Flags           flagStoreMarshal
+		SubmitLimit     int
+		Services        []*Service
+		ExecutionDumper executionDumperMarshal
 	}{}
 
 	m.Name = s.name
@@ -132,6 +135,7 @@ func (s *Session) MarshalJSON() ([]byte, error) {
 	m.Services = s.services
 	m.Flags = flagStoreMarshal{s.flags}
 	m.SubmitLimit = s.submitter.limitForEachSubmit
+	m.ExecutionDumper = executionDumperMarshal{s.dumper}
 	return json.Marshal(m)
 }
 
@@ -206,5 +210,50 @@ func (flagStoreMarshal *flagStoreMarshal) UnmarshalJSON(body []byte) error {
 	}
 
 	flagStoreMarshal.FlagStore = flag
+	return nil
+}
+
+type executionDumperMarshal struct{ dumper ExecutionDumper }
+
+func (e executionDumperMarshal) MarshalJSON() ([]byte, error) {
+	dumper := e.dumper
+
+	return json.Marshal(struct {
+		Name   string
+		Dumper ExecutionDumper
+	}{Name: dumper.name(), Dumper: dumper})
+}
+
+func (e *executionDumperMarshal) UnmarshalJSON(body []byte) error {
+	mapp := struct {
+		Name   string
+		Dumper interface{}
+	}{}
+
+	err := json.Unmarshal(body, &mapp)
+	if err != nil {
+		return fmt.Errorf("decode execution dumper: %w", err)
+	}
+	if mapp.Name == "" {
+		return fmt.Errorf("no Name found")
+	}
+
+	dumper, ok := registeredExecutionDumper[mapp.Name]
+	if !ok {
+		return fmt.Errorf("no registered Name")
+	}
+
+	content, err := json.Marshal(mapp.Dumper)
+	if err != nil {
+		return fmt.Errorf("Cannot re encode dumper: %w", err)
+	}
+
+	dump := dumper()
+	err = dump.UnmarshalJSON(content)
+	if err != nil {
+		return err
+	}
+
+	e.dumper = dump
 	return nil
 }
