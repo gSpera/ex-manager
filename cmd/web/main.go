@@ -101,6 +101,7 @@ func main() {
 	s.HandleServerFunc("/api/submitterStatus", handleApiSubmitterInfo)
 	s.HandleServerFunc("/api/name", handleApiName)
 	s.HandleServerFunc("/api/workersStatus", handleApiWorkersStatus)
+	s.HandleServerFunc("/api/logsForExecID", handleApiLogsForExecution)
 
 	log.Infoln("Listening on", httpServer.Addr)
 	err = httpServer.ListenAndServe()

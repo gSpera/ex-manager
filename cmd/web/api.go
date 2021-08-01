@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/gSpera/ex-manager"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
 
 func serverHandler(s *Server, fn func(*Server, http.ResponseWriter, *http.Request)) http.HandlerFunc {
@@ -325,6 +327,31 @@ func handleApiWorkersStatus(s *Server, rw http.ResponseWriter, r *http.Request) 
 	jsonEncoder.SetIndent("", "\t")
 	err := jsonEncoder.Encode(values)
 	if err != nil {
-		s.log.Printf("Cannot encode json: %w\n", err)
+		s.log.Errorln("Cannot encode json: %v\n", err)
+	}
+}
+
+func handleApiLogsForExecution(s *Server, rw http.ResponseWriter, r *http.Request) {
+	uidString := r.FormValue("execID")
+	execID, err := uuid.Parse(uidString)
+
+	if err != nil {
+		http.Error(rw, "No execID", http.StatusBadRequest)
+		return
+	}
+
+	logs, err := s.Session.LogForExeuctionId(execID)
+	if err != nil {
+		s.log.WithFields(logrus.Fields{
+			"execution-id": execID,
+			"what":         "recover-from-db",
+		}).Errorln("Cannot recover logs for execution")
+		http.Error(rw, "Internal Error", http.StatusInternalServerError)
+		return
+	}
+
+	err = json.NewEncoder(rw).Encode(logs)
+	if err != nil {
+		s.log.Errorln("Cannot encode json: %v\n", err)
 	}
 }

@@ -498,6 +498,51 @@ class WorkerStatus extends React.Component {
     }
 }
 
+class ExecutionLogs extends React.Component {
+    constructor(props) {
+        super(props);
+        fetch("/api/logsForExecID?execID=" + props.execID)
+            .then(r => r.json())
+            .then(r => this.setState({
+                ...this.state,
+                logs: r,
+                service: r[0].ServiceName,
+                exploit: r[0].ExploitName,
+            }));
+
+        this.state = {};
+    }
+
+    render() {
+        if (!this.state.logs) {
+            return <div>Loading</div>;
+        }
+
+        return <div className="modal is-active">
+            <div className="modal-background"></div>
+
+            <div className="modal-card">
+                <div className="modal-card-head">
+                    <div className="modal-card-title">
+                        <h3 className="title is-3">Logs of {this.state.service} / {this.state.exploit}</h3>
+                        <h5 className="subtitle is-5">ExecutionID: {this.props.execID}</h5>
+                    </div>
+                    <button className="delete" air-label="close"></button>
+                </div>
+                <div className="modal-card-body">
+                    <div className="execution-logs">
+                        {
+                            this.state.logs.sort((a, b) => a.When - b.When).map(l =>
+                                <span className={"exec-log-entry log-stream-" + l.Stream} key={l.ExecID + l.When}>{l.Content}</span>
+                            )
+                        }
+                    </div>
+                </div>
+            </div>
+        </div >;
+    }
+}
+
 const modalRef = React.createRef();
 const serviceRef = React.createRef();
 ReactDOM.render(
@@ -529,4 +574,9 @@ ReactDOM.render(
 ReactDOM.render(
     <WorkerStatus />,
     document.getElementById("workers-root"),
+)
+
+ReactDOM.render(
+    <ExecutionLogs execID="af6a42b1-1809-4a62-9727-2ed0470fb74e" />,
+    document.getElementById("execlogs-root"),
 )
