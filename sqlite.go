@@ -8,32 +8,27 @@ import (
 	"strings"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	_ "modernc.org/sqlite"
 )
 
 var _ FlagStore = &SQLiteStore{}
+var _ ExecutionDumper = &SQLiteStore{}
 
 func init() {
 	RegisterFlagStore(func() FlagStore {
 		return new(SQLiteStore)
 	})
+	RegisterExecutionDumper(func() ExecutionDumper {
+		return new(SQLiteStore)
+	})
 }
 
+// SQLiteStore is a FlagStore and a ExecutionDumper.
 type SQLiteStore struct {
 	url string
 	*sql.DB
 }
 
-// Put(...Flag) error
-// GetByName(serviceName string, exploitName string) ([]Flag, error)
-// UpdateState(flagValue string, flagState SubmittedFlagStatus) error
-// GetValueToSubmit(limit int) ([]string, error)
-// GetFlagsSubmittedDuring(from time.Time, to time.Time) ([]Flag, error)
-
-// name() string
-// json.Marshaler
-// json.Unmarshaler
 func NewSqliteStore(file string) (*SQLiteStore, error) {
 	s := &SQLiteStore{}
 	err := s.init(file)
@@ -71,7 +66,16 @@ func (s *SQLiteStore) CreateTables() error {
 		takenAt INTEGER,
 		submittedAt INTEGER,
 		executionId INTEGER
+	);
+	CREATE TABLE IF NOT EXISTS execlogs (
+		"service"	NUMERIC,
+		"exploit"	INTEGER,
+		"execid"	INTEGER,
+		"stream_name"	TEXT,
+		"content"	TEXT,
+		"time" INTEGER
 	);`)
+
 	return err
 }
 
@@ -191,8 +195,14 @@ func (s *SQLiteStore) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("sqlite: no url")
 	}
 
-	defer spew.Dump(s)
 	return s.init(s.url)
+}
+
+func (s *SQLiteStore) Dump(service string, exploit string, execID ExecutionID, stream OutputStream, body []byte) error {
+	_, err := s.Exec(`INSERT INTO execlogs VALUES (?, ?, ?, ?, ?, ?)`,
+		service, exploit, execID, string(stream), string(body), time.Now().UnixNano())
+
+	return err
 }
 
 type timeScan struct{ *time.Time }
