@@ -131,9 +131,10 @@ func handleApiExploitStatus(s *Server, rw http.ResponseWriter, r *http.Request) 
 	}
 
 	type targetStruct struct {
-		Name  string
-		Flags []ex.Flag
-		Fixed bool
+		Name    string
+		Flags   []ex.Flag
+		ExecIDs []ex.ExecutionID
+		Fixed   bool
 	}
 
 	m := struct {
@@ -157,6 +158,12 @@ func handleApiExploitStatus(s *Server, rw http.ResponseWriter, r *http.Request) 
 			if f.From == targets[i] {
 				m.Targets[i].Flags = append(m.Targets[i].Flags, f)
 			}
+		}
+
+		var err error
+		m.Targets[i].ExecIDs, err = s.Session.ExecIDsFromServiceExploitTarget(serviceName, exploitName, m.Targets[i].Name)
+		if err != nil {
+			s.log.Errorln("Cannot retrieve exec ids:", err)
 		}
 	}
 

@@ -24,7 +24,7 @@ class Services extends React.Component {
     render() {
         return <React.Fragment>
             {
-                this.state.services.map(service => <Service key={service} name={service} refUploadExploit={this.props.modalRef} />)
+                this.state.services.map(service => <Service key={service} name={service} refUploadExploit={this.props.modalRef} execLogsRef={execLogModalRef} />)
             }
         </React.Fragment>
     }
@@ -77,7 +77,7 @@ class Service extends React.Component {
             </div>
             {
                 this.state.exploits.map(exploit =>
-                    <Exploit service={this.props.name} name={exploit} key={this.props.name + "-" + exploit} />
+                    <Exploit service={this.props.name} name={exploit} key={this.props.name + "-" + exploit} execLogsRef={execLogModalRef} />
                 )
             }
         </div>;
@@ -166,6 +166,9 @@ class Exploit extends React.Component {
                                         <td key={target.Name + "-target"}>{target.Name}</td>
                                         <td key={target.Name + "-address"}>{target.Flags.length}</td>
                                         <td key={target.Name + "-flags"}>{target.Fixed ? 'X' : '-'}</td>
+                                        <td>{
+                                            target.ExecIDs.map(id => <div>{id}</div>)}
+                                        </td>
                                     </tr>
                             )
                         }
@@ -176,7 +179,7 @@ class Exploit extends React.Component {
     }
 }
 
-class GlobalModal extends React.Component {
+class ExploitModal extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -501,33 +504,46 @@ class WorkerStatus extends React.Component {
 class ExecutionLogs extends React.Component {
     constructor(props) {
         super(props);
-        fetch("/api/logsForExecID?execID=" + props.execID)
+
+        this.state = {
+            logs: [],
+            hidden: true,
+        };
+
+        this.udpate = this.update.bind(this);
+    }
+
+    update() {
+        console.log("Update");
+
+        if (!this.state.execID) return;
+
+        fetch("/api/logsForExecID?execID=" + this.state.execID)
             .then(r => r.json())
             .then(r => this.setState({
                 ...this.state,
+                loaded: true,
                 logs: r,
                 service: r[0].ServiceName,
                 exploit: r[0].ExploitName,
-            }));
-
-        this.state = {};
+            }))
+            .catch(err => console.error(err));
     }
 
     render() {
-        if (!this.state.logs) {
-            return <div>Loading</div>;
-        }
+        console.log("Render");
+        if (this.state.logs.length == 0) this.update();
 
-        return <div className="modal is-active">
+        return <div className={"modal " + (this.state.hidden ? "" : "is-active")}>
             <div className="modal-background"></div>
 
             <div className="modal-card">
                 <div className="modal-card-head">
                     <div className="modal-card-title">
                         <h3 className="title is-3">Logs of {this.state.service} / {this.state.exploit}</h3>
-                        <h5 className="subtitle is-5">ExecutionID: {this.props.execID}</h5>
+                        <h5 className="subtitle is-5">ExecutionID: {this.state.execID}</h5>
                     </div>
-                    <button className="delete" air-label="close"></button>
+                    <button className="delete" air-label="close" onClick={() => this.setState({ ...this.state, logs: [], hidden: true })}></button>
                 </div>
                 <div className="modal-card-body">
                     <div className="execution-logs">
@@ -543,10 +559,11 @@ class ExecutionLogs extends React.Component {
     }
 }
 
-const modalRef = React.createRef();
+const exploitModalRef = React.createRef();
 const serviceRef = React.createRef();
+const execLogModalRef = React.createRef();
 ReactDOM.render(
-    <GlobalModal ref={modalRef} />,
+    <ExploitModal ref={exploitModalRef} />,
     document.getElementById("global-modal"),
 )
 fetch("/api/sessionStatus")
@@ -555,14 +572,14 @@ fetch("/api/sessionStatus")
         document.querySelector("#navbar > h1").innerText = r["Name"];
 
         ReactDOM.render(
-            <Services services={r["Services"]} modalRef={modalRef} ref={serviceRef} />,
+            <Services services={r["Services"]} modalRef={exploitModalRef} execLogsRef={execLogModalRef} ref={serviceRef} />,
             document.getElementById("services-root")
         );
     })
     .catch(err => console.error(err));
 
 ReactDOM.render(
-    <ServiceAddComponent serviceRef={serviceRef} />,
+    <ServiceAddComponent serviceRef={serviceRef} logsRef={execLogModalRef} />,
     document.getElementById("add-service"),
 );
 
@@ -574,9 +591,9 @@ ReactDOM.render(
 ReactDOM.render(
     <WorkerStatus />,
     document.getElementById("workers-root"),
-)
+);
 
 ReactDOM.render(
-    <ExecutionLogs execID="af6a42b1-1809-4a62-9727-2ed0470fb74e" />,
+    <ExecutionLogs ref={execLogModalRef} />,
     document.getElementById("execlogs-root"),
-)
+);
