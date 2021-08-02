@@ -249,3 +249,7 @@ func (s *Session) GetFlagsSubmittedDuring(from time.Time, to time.Time) ([]Flag,
 func (s *Session) LogForExeuctionId(execID ExecutionID) ([]ExecutionLog, error) {
 	return s.dumper.LogsFromExecID(execID)
 }
+
+func (s *Session) ExecIDsFromServiceExploitTarget(serviceName string, exploitName string, target Target) ([]ExecutionID, error) {
+	return s.dumper.ExecIDsFromServiceExploitTarget(serviceName, exploitName, target)
+}

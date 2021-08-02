@@ -44,6 +44,7 @@ func init() {
 type ExecutionDumper interface {
 	Dump(serviceName string, exploitName string, target Target, execID ExecutionID, stream OutputStream, content []byte) error
 	LogsFromExecID(ExecutionID) ([]ExecutionLog, error)
+	ExecIDsFromServiceExploitTarget(serviceName string, exploitName string, target Target) ([]ExecutionID, error)
 
 	json.Marshaler
 	json.Unmarshaler

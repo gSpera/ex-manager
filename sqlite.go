@@ -70,6 +70,7 @@ func (s *SQLiteStore) CreateTables() error {
 	CREATE TABLE IF NOT EXISTS execlogs (
 		"service"	NUMERIC,
 		"exploit"	INTEGER,
+		"target"    TEXT,
 		"execid"	INTEGER,
 		"stream_name"	TEXT,
 		"content"	TEXT,
@@ -222,6 +223,27 @@ func (s *SQLiteStore) LogsFromExecID(execID ExecutionID) ([]ExecutionLog, error)
 	}
 
 	return logs, nil
+}
+
+func (s *SQLiteStore) ExecIDsFromServiceExploitTarget(serviceName string, exploitName string, target Target) ([]ExecutionID, error) {
+	rows, err := s.Query(`SELECT execID FROM execlogs WHERE service=? AND exploit=? AND target=?`, serviceName, exploitName, target)
+
+	if err != nil {
+		return nil, fmt.Errorf("Cannot query logs from service, exploit, target: %w", err)
+	}
+
+	ids := []ExecutionID{}
+	for rows.Next() {
+		var id ExecutionID
+		err := rows.Scan(&id)
+		if err != nil {
+			return nil, fmt.Errorf("Cannot scan exec id: %w", err)
+		}
+
+		ids = append(ids, id)
+	}
+
+	return ids, nil
 }
 
 type timeScan struct{ *time.Time }
