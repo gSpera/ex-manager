@@ -195,9 +195,9 @@ func (s *SQLiteStore) UnmarshalJSON(data []byte) error {
 	return s.init(s.url)
 }
 
-func (s *SQLiteStore) Dump(service string, exploit string, execID ExecutionID, stream OutputStream, body []byte) error {
-	_, err := s.Exec(`INSERT INTO execlogs VALUES (?, ?, ?, ?, ?, ?)`,
-		service, exploit, execID, string(stream), string(body), time.Now().UnixNano())
+func (s *SQLiteStore) Dump(service string, exploit string, target Target, execID ExecutionID, stream OutputStream, body []byte) error {
+	_, err := s.Exec(`INSERT INTO execlogs VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		service, exploit, target, execID, string(stream), string(body), time.Now().UnixNano())
 
 	return err
 }

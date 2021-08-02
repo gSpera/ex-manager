@@ -20,6 +20,7 @@ const (
 type ExecutionLog struct {
 	ServiceName string
 	ExploitName string
+	Target      Target
 	ExecutionID ExecutionID
 	Stream      OutputStream
 	Content     string
@@ -41,7 +42,7 @@ func init() {
 // logs can be stored in a volatile media, as a console,
 // or even a persisten one like a file or a database
 type ExecutionDumper interface {
-	Dump(serviceName string, exploitName string, execID ExecutionID, stream OutputStream, content []byte) error
+	Dump(serviceName string, exploitName string, target Target, execID ExecutionID, stream OutputStream, content []byte) error
 	LogsFromExecID(ExecutionID) ([]ExecutionLog, error)
 
 	json.Marshaler
@@ -54,13 +55,14 @@ type ExecutionDumper interface {
 type executionDumperWriter struct {
 	service string
 	exploit string
+	target  Target
 	dumper  ExecutionDumper
 	id      ExecutionID
 	stream  OutputStream
 }
 
 func (e executionDumperWriter) Write(body []byte) (int, error) {
-	err := e.dumper.Dump(e.service, e.exploit, e.id, e.stream, body)
+	err := e.dumper.Dump(e.service, e.exploit, e.target, e.id, e.stream, body)
 	if err != nil {
 		return 0, err
 	}
@@ -68,10 +70,11 @@ func (e executionDumperWriter) Write(body []byte) (int, error) {
 	return len(body), nil
 }
 
-func ExecutionDumperToWriter(dumper ExecutionDumper, serviceName string, exploitName string, id ExecutionID, stream OutputStream) io.Writer {
+func ExecutionDumperToWriter(dumper ExecutionDumper, serviceName string, exploitName string, target Target, id ExecutionID, stream OutputStream) io.Writer {
 	return executionDumperWriter{
 		service: serviceName,
 		exploit: exploitName,
+		target:  target,
 		dumper:  dumper,
 		id:      id,
 		stream:  stream,
@@ -80,7 +83,7 @@ func ExecutionDumperToWriter(dumper ExecutionDumper, serviceName string, exploit
 
 func ExploitOutputWriter(logger io.Writer, stream OutputStream, dumper ExecutionDumper, t Target, e *Exploit, execID ExecutionID) io.Writer {
 	retriever := FlagRetriveWriter(t, e, execID)
-	dump := ExecutionDumperToWriter(dumper, e.service.Name(), e.Name(), execID, stream)
+	dump := ExecutionDumperToWriter(dumper, e.service.Name(), e.Name(), t, execID, stream)
 	return io.MultiWriter(
 		logger,
 		retriever,
