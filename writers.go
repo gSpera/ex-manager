@@ -42,6 +42,7 @@ func init() {
 // logs can be stored in a volatile media, as a console,
 // or even a persisten one like a file or a database
 type ExecutionDumper interface {
+	NewExecution(serviceName string, exploitName string, target Target) (ExecutionID, error)
 	Dump(serviceName string, exploitName string, target Target, execID ExecutionID, stream OutputStream, content []byte) error
 	LogsFromExecID(ExecutionID) ([]ExecutionLog, error)
 	LatestExecIDTimeFromServiceExploitTarget(serviceName string, exploitName string, target Target) (ExecutionID, time.Time, bool, error)

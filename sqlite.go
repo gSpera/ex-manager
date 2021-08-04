@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	_ "modernc.org/sqlite"
 )
 
@@ -248,13 +249,22 @@ func (s *SQLiteStore) LatestExecIDTimeFromServiceExploitTarget(serviceName strin
 
 	return id, t, true, nil
 }
-			return nil, fmt.Errorf("Cannot scan exec id: %w", err)
-		}
 
-		ids = append(ids, id)
+func (s *SQLiteStore) NewExecution(serviceName string, exploitName string, target Target) (ExecutionID, error) {
+	// Generate UUID
+	uid, err := uuid.NewRandom()
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("Cannot generate UUID: %w", err)
 	}
 
-	return ids, nil
+	// Store in DB
+	tm := time.Now()
+	_, err = s.Exec(`INSERT INTO executions VALUES (?, ?, ?, ?, ?)`, serviceName, exploitName, target, uid, &timeScan{&tm})
+	if err != nil {
+		return uid, fmt.Errorf("Cannot store execution in Databse: %w", err)
+	}
+
+	return uid, nil
 }
 
 type timeScan struct{ *time.Time }
