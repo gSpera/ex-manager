@@ -131,10 +131,14 @@ func handleApiExploitStatus(s *Server, rw http.ResponseWriter, r *http.Request) 
 	}
 
 	type targetStruct struct {
-		Name    string
-		Flags   []ex.Flag
-		ExecIDs []ex.ExecutionID
-		Fixed   bool
+		Name            string
+		Flags           []ex.Flag
+		HasBeenExecuted bool
+		LatestExecution struct {
+			ID   ex.ExecutionID
+			Time timeValue
+		}
+		Fixed bool
 	}
 
 	m := struct {
@@ -160,11 +164,14 @@ func handleApiExploitStatus(s *Server, rw http.ResponseWriter, r *http.Request) 
 			}
 		}
 
-		var err error
-		m.Targets[i].ExecIDs, err = s.Session.ExecIDsFromServiceExploitTarget(serviceName, exploitName, m.Targets[i].Name)
+		id, t, hasBeenExecuted, err := s.Session.LatestExecIDTimeFromServiceExploitTarget(serviceName, exploitName, m.Targets[i].Name)
 		if err != nil {
 			s.log.Errorln("Cannot retrieve exec ids:", err)
 		}
+
+		m.Targets[i].HasBeenExecuted = hasBeenExecuted
+		m.Targets[i].LatestExecution.ID = id
+		m.Targets[i].LatestExecution.Time = timeValue(t)
 	}
 
 	m.State = exploit.CurrentStateString()

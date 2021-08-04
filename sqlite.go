@@ -225,18 +225,29 @@ func (s *SQLiteStore) LogsFromExecID(execID ExecutionID) ([]ExecutionLog, error)
 	return logs, nil
 }
 
-func (s *SQLiteStore) ExecIDsFromServiceExploitTarget(serviceName string, exploitName string, target Target) ([]ExecutionID, error) {
-	rows, err := s.Query(`SELECT execID FROM execlogs WHERE service=? AND exploit=? AND target=?`, serviceName, exploitName, target)
+func (s *SQLiteStore) LatestExecIDTimeFromServiceExploitTarget(serviceName string, exploitName string, target Target) (ExecutionID, time.Time, bool, error) {
+	var id ExecutionID
+	var t time.Time
+
+	rows, err := s.Query(`SELECT execID, time FROM executions WHERE service=? AND exploit=? AND target=? ORDER BY time DESC LIMIT 1`, serviceName, exploitName, target)
+	defer rows.Close()
 
 	if err != nil {
-		return nil, fmt.Errorf("Cannot query logs from service, exploit, target: %w", err)
+		return id, t, false, fmt.Errorf("Cannot query logs from service, exploit, target: %w", err)
 	}
 
-	ids := []ExecutionID{}
-	for rows.Next() {
-		var id ExecutionID
-		err := rows.Scan(&id)
-		if err != nil {
+	if !rows.Next() && rows.Err() != nil {
+		return id, t, false, fmt.Errorf("No results: %w", rows.Err())
+	}
+
+	err = rows.Scan(&id, &timeScan{&t})
+	if err != nil {
+		// rows are closed
+		return id, t, false, nil
+	}
+
+	return id, t, true, nil
+}
 			return nil, fmt.Errorf("Cannot scan exec id: %w", err)
 		}
 
