@@ -76,6 +76,14 @@ func (s *SQLiteStore) CreateTables() error {
 		"stream_name"	TEXT,
 		"content"	TEXT,
 		"time" INTEGER
+	);
+
+	CREATE TABLE IF NOT EXISTS executions (
+		"service" STRING,
+		"exploit" STRING,
+		"target"  STRING,
+		"execid"  STRING,
+		"time"    INTEGER
 	);`)
 
 	return err
@@ -114,6 +122,7 @@ func (s *SQLiteStore) Put(flags ...Flag) error {
 func (s *SQLiteStore) GetByName(serviceName string, exploitName string) ([]Flag, error) {
 	flags := make([]Flag, 0)
 	rows, err := s.Query("SELECT * FROM flags WHERE service=? AND exploit=?", serviceName, exploitName)
+	defer rows.Close()
 	if err != nil {
 		return flags, fmt.Errorf("cannot query database: %w", err)
 	}
@@ -143,6 +152,7 @@ func (s *SQLiteStore) UpdateState(flagValue string, state SubmittedFlagStatus) e
 func (s *SQLiteStore) GetValueToSubmit(limit int) ([]string, error) {
 	flags := make([]string, 0)
 	rows, err := s.Query("SELECT value FROM flags WHERE status=\"NOT-SUBMITTED\" ORDER BY takenAt  LIMIT ?", limit)
+	defer rows.Close()
 	if err != nil {
 		return flags, fmt.Errorf("cannot query: %w", err)
 	}
@@ -162,6 +172,7 @@ func (s *SQLiteStore) GetValueToSubmit(limit int) ([]string, error) {
 func (s *SQLiteStore) GetFlagsSubmittedDuring(from time.Time, to time.Time) ([]Flag, error) {
 	flags := make([]Flag, 0)
 	rows, err := s.Query("SELECT * FROM flags WHERE submittedAt >= ? and submittedAt <= ?", from.UnixNano(), to.UnixNano())
+	defer rows.Close()
 	if err != nil {
 		return flags, fmt.Errorf("cannot query: %w", err)
 	}
@@ -206,6 +217,7 @@ func (s *SQLiteStore) Dump(service string, exploit string, target Target, execID
 
 func (s *SQLiteStore) LogsFromExecID(execID ExecutionID) ([]ExecutionLog, error) {
 	rows, err := s.Query(`SELECT * FROM execlogs WHERE execID = ?`, execID)
+	defer rows.Close()
 
 	if err != nil {
 		return []ExecutionLog{}, fmt.Errorf("Cannot query logs for execution: %q: %w", execID, err)
@@ -215,7 +227,7 @@ func (s *SQLiteStore) LogsFromExecID(execID ExecutionID) ([]ExecutionLog, error)
 
 	for rows.Next() {
 		var l ExecutionLog
-		err := rows.Scan(&l.ServiceName, &l.ExploitName, &l.ExecutionID, &l.Stream, &l.Content, &timeScan{&l.When})
+		err := rows.Scan(&l.ServiceName, &l.ExploitName, &l.Target, &l.ExecutionID, &l.Stream, &l.Content, &timeScan{&l.When})
 		if err != nil {
 			return []ExecutionLog{}, fmt.Errorf("Cannot scan row: %w", err)
 		}
@@ -283,5 +295,5 @@ func (t *timeScan) Scan(v interface{}) error {
 }
 
 func (t *timeScan) Value() (driver.Value, error) {
-	return t.Format(time.RFC3339Nano), nil
+	return t.UnixNano(), nil
 }

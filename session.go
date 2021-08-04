@@ -250,6 +250,6 @@ func (s *Session) LogForExeuctionId(execID ExecutionID) ([]ExecutionLog, error) 
 	return s.dumper.LogsFromExecID(execID)
 }
 
-func (s *Session) ExecIDsFromServiceExploitTarget(serviceName string, exploitName string, target Target) ([]ExecutionID, error) {
-	return s.dumper.ExecIDsFromServiceExploitTarget(serviceName, exploitName, target)
+func (s *Session) LatestExecIDTimeFromServiceExploitTarget(serviceName string, exploitName string, target Target) (ExecutionID, time.Time, bool, error) {
+	return s.dumper.LatestExecIDTimeFromServiceExploitTarget(serviceName, exploitName, target)
 }

@@ -154,6 +154,7 @@ class Exploit extends React.Component {
                         <tr>
                             <th>Target</th>
                             <th>Flags Taken</th>
+                            <th>Latest Execution</th>
                             <th>Fixed</th>
                         </tr>
                     </thead>
@@ -165,10 +166,11 @@ class Exploit extends React.Component {
                                     <tr key={target.Name}>
                                         <td key={target.Name + "-target"}>{target.Name}</td>
                                         <td key={target.Name + "-address"}>{target.Flags.length}</td>
-                                        <td key={target.Name + "-flags"}>{target.Fixed ? 'X' : '-'}</td>
-                                        <td>{
-                                            target.ExecIDs.map(id => <div>{id}</div>)}
+                                        <td key={target.Name + "-latestexec"}>
+                                            <a onClick={() => this.props.execLogsRef.current.setState({ hidden: false, execID: target.LatestExecution.ID })}>{target.LatestExecution.ID}</a> -
+                                            {target.HasBeenExecuted ? timestampNanoToSecondsAgo(target.LatestExecution.Time) : "Never"}
                                         </td>
+                                        <td key={target.Name + "-flags"}>{target.Fixed ? 'X' : '-'}</td>
                                     </tr>
                             )
                         }
@@ -177,6 +179,22 @@ class Exploit extends React.Component {
             </details>
         </div >;
     }
+}
+
+function timestampNanoToSecondsAgo(nano) {
+    nano = nano / 10e5;
+    const now = new Date();
+    const delta = (now - nano) / 10e2;
+    const minutes = delta / 60;
+    const seconds = delta % 60;
+
+    let out = "";
+    if (minutes >= 1) {
+        out += minutes.toFixed() + "m ";
+    }
+    out += seconds.toFixed() + "s ago";
+
+    return out;
 }
 
 class ExploitModal extends React.Component {

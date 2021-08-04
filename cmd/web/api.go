@@ -176,7 +176,9 @@ func handleApiExploitStatus(s *Server, rw http.ResponseWriter, r *http.Request) 
 
 	m.State = exploit.CurrentStateString()
 
-	json.NewEncoder(rw).Encode(m)
+	e := json.NewEncoder(rw)
+	e.SetIndent("", "\t")
+	e.Encode(m)
 }
 
 func handleApiFlags(s *Server, rw http.ResponseWriter, r *http.Request) {
@@ -359,7 +361,7 @@ func handleApiLogsForExecution(s *Server, rw http.ResponseWriter, r *http.Reques
 		s.log.WithFields(logrus.Fields{
 			"execution-id": execID,
 			"what":         "recover-from-db",
-		}).Errorln("Cannot recover logs for execution")
+		}).Errorln("Cannot recover logs for execution:", err)
 		http.Error(rw, "Internal Error", http.StatusInternalServerError)
 		return
 	}
@@ -368,4 +370,11 @@ func handleApiLogsForExecution(s *Server, rw http.ResponseWriter, r *http.Reques
 	if err != nil {
 		s.log.Errorln("Cannot encode json: %v\n", err)
 	}
+}
+
+type timeValue time.Time
+
+func (t timeValue) MarshalJSON() ([]byte, error) {
+	v := time.Time(t).UnixNano()
+	return json.Marshal(v)
 }
