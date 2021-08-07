@@ -3,6 +3,7 @@ package ex
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"io"
 	"time"
 
@@ -83,18 +84,47 @@ func ExecutionDumperToWriter(dumper ExecutionDumper, serviceName string, exploit
 	}
 }
 
-func ExploitOutputWriter(logger io.Writer, stream OutputStream, dumper ExecutionDumper, t Target, e *Exploit, execID ExecutionID) io.Writer {
+type writerAndCloser struct {
+	io.Writer
+	io.Closer
+}
+
+type closerFn func() error
+
+func (fn closerFn) Close() error {
+	return fn()
+}
+
+func ExploitOutputWriter(logger io.WriteCloser, stream OutputStream, dumper ExecutionDumper, t Target, e *Exploit, execID ExecutionID) io.WriteCloser {
 	retriever := FlagRetriveWriter(t, e, execID)
 	dump := ExecutionDumperToWriter(dumper, e.service.Name(), e.Name(), t, execID, stream)
-	return io.MultiWriter(
+	writer := io.MultiWriter(
 		logger,
 		retriever,
 		dump,
 	)
+	return writerAndCloser{
+		Writer: writer,
+		Closer: closerFn(func() error {
+			err1 := logger.Close()
+			err2 := retriever.Close()
+			switch {
+			case err1 != nil && err2 != nil:
+				// cannot wrap??
+				return fmt.Errorf("Error while closing both logger and retriever: logger: %v; retriever: %v", err1, err2)
+			case err1 != nil:
+				return fmt.Errorf("Error while closing logger: %w", err1)
+			case err2 != nil:
+				return fmt.Errorf("Error while closing retriever: %w", err2)
+			}
+
+			return nil
+		}),
+	}
 }
 
 // FlagRetriveWriter returns a io.Writer, when wrote the content is searched for flags
-func FlagRetriveWriter(t Target, e *Exploit, execId ExecutionID) io.Writer {
+func FlagRetriveWriter(t Target, e *Exploit, execId ExecutionID) io.WriteCloser {
 	pr, pw := io.Pipe()
 
 	go func() {

@@ -59,8 +59,12 @@ func (s *Submitter) Submit() {
 	cmdArgs := strings.Fields(s.cmdLine)
 	cmdArgs = append(cmdArgs, flags...)
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
-	cmd.Stdout = SubmitterRetrieverWriter(s.flagRegex, s.log, s.log.Writer(), s.flagStore)
-	cmd.Stderr = s.log.Writer()
+	stdout := SubmitterRetrieverWriter(s.flagRegex, s.log, s.log.Writer(), s.flagStore)
+	defer stdout.Close()
+	stderr := s.log.Writer()
+	defer stderr.Close()
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 	err = cmd.Run()
 	if err != nil {
 		s.log.Errorln("Cannot send flags:", err)
@@ -70,7 +74,7 @@ func (s *Submitter) Submit() {
 	s.log.Println("Done sending flags")
 }
 
-func SubmitterRetrieverWriter(flagRegex string, lo *log.Entry, w io.Writer, flagStore FlagStore) io.Writer {
+func SubmitterRetrieverWriter(flagRegex string, lo *log.Entry, w io.Writer, flagStore FlagStore) io.WriteCloser {
 	pr, pw := io.Pipe()
 
 	r := bufio.NewReader(pr)
