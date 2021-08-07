@@ -85,10 +85,10 @@ func handleApiSessionStatus(s *Server, rw http.ResponseWriter, r *http.Request) 
 	}{}
 
 	m.Name = s.Session.Name()
-	m.Services = []string{}
+	m.Services = make([]string, len(s.Session.ListServices()))
 
-	for _, service := range s.Session.ListServices() {
-		m.Services = append(m.Services, service.Name())
+	for i, service := range s.Session.ListServices() {
+		m.Services[i] = service.Name()
 	}
 
 	json.NewEncoder(rw).Encode(m)
