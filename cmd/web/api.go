@@ -138,7 +138,8 @@ func handleApiExploitStatus(s *Server, rw http.ResponseWriter, r *http.Request) 
 			ID   ex.ExecutionID
 			Time timeValue
 		}
-		Fixed bool
+		ExecutionsNumber int
+		Fixed            bool
 	}
 
 	m := struct {
@@ -172,6 +173,12 @@ func handleApiExploitStatus(s *Server, rw http.ResponseWriter, r *http.Request) 
 		m.Targets[i].HasBeenExecuted = hasBeenExecuted
 		m.Targets[i].LatestExecution.ID = id
 		m.Targets[i].LatestExecution.Time = timeValue(t)
+
+		m.Targets[i].ExecutionsNumber, err = s.Session.ExecutionsNumberFromServiceExploitTarget(serviceName, exploitName, m.Targets[i].Name)
+		if err != nil {
+			s.log.Errorln("Cannot calcolate number of executions: %v", err)
+			m.Targets[i].ExecutionsNumber = -1
+		}
 	}
 
 	m.State = exploit.CurrentStateString()

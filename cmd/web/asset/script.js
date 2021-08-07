@@ -155,6 +155,7 @@ class Exploit extends React.Component {
                             <th>Target</th>
                             <th>Flags Taken</th>
                             <th>Latest Execution</th>
+                            <th>Logs</th>
                             <th>Fixed</th>
                         </tr>
                     </thead>
@@ -167,9 +168,12 @@ class Exploit extends React.Component {
                                         <td key={target.Name + "-target"}>{target.Name}</td>
                                         <td key={target.Name + "-address"}>{target.Flags.length}</td>
                                         <td key={target.Name + "-latestexec"}>
-                                            <a onClick={() => this.props.execLogsRef.current.setState({ hidden: false, execID: target.LatestExecution.ID })}>{target.LatestExecution.ID}</a> -
-                                            {target.HasBeenExecuted ? timestampNanoToSecondsAgo(target.LatestExecution.Time) : "Never"}
+                                            <a className="monospace" onClick={() => this.props.execLogsRef.current.setState({ hidden: false, execID: target.LatestExecution.ID })}>
+                                                {target.HasBeenExecuted ? timestampNanoToSecondsAgo(target.LatestExecution.Time) : "Never"}
+                                                <span className="content is-small"> - {target.LatestExecution.ID}</span>
+                                            </a>
                                         </td>
+                                        <td key={target.Name + "-logs"}>{target.ExecutionsNumber} executions</td>
                                         <td key={target.Name + "-flags"}>{target.Fixed ? 'X' : '-'}</td>
                                     </tr>
                             )

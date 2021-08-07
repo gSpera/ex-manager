@@ -253,3 +253,7 @@ func (s *Session) LogForExeuctionId(execID ExecutionID) ([]ExecutionLog, error) 
 func (s *Session) LatestExecIDTimeFromServiceExploitTarget(serviceName string, exploitName string, target Target) (ExecutionID, time.Time, bool, error) {
 	return s.dumper.LatestExecIDTimeFromServiceExploitTarget(serviceName, exploitName, target)
 }
+
+func (s *Session) ExecutionsNumberFromServiceExploitTarget(serviceName string, exploitName string, target Target) (int, error) {
+	return s.dumper.ExecutionsNumberFromServiceExploitTarget(serviceName, exploitName, target)
+}

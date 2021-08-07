@@ -279,6 +279,26 @@ func (s *SQLiteStore) NewExecution(serviceName string, exploitName string, targe
 	return uid, nil
 }
 
+func (s *SQLiteStore) ExecutionsNumberFromServiceExploitTarget(serviceName string, exploitName string, target Target) (int, error) {
+	rows, err := s.Query(`SELECT COUNT(*) FROM executions WHERE service=? AND exploit=? AND target=?`, serviceName, exploitName, target)
+	defer rows.Close()
+	if err != nil {
+		return 0, fmt.Errorf("Cannot count in database: %w", err)
+	}
+
+	if !rows.Next() && rows.Err() != nil {
+		return 0, fmt.Errorf("Cannot retrive rows: %w", err)
+	}
+
+	var res int
+	err = rows.Scan(&res)
+	if err != nil {
+		return 0, fmt.Errorf("Cannot scan rows: %w", err)
+	}
+
+	return res, nil
+}
+
 type timeScan struct{ *time.Time }
 
 func (t *timeScan) Scan(v interface{}) error {
